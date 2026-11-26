@@ -21,7 +21,7 @@ function form(overrides: Record<string, string> = {}) {
 
 describe("parseClientForm", () => {
   test("必須項目だけで登録できる。任意項目の空欄は null になる", () => {
-    expect(parseClientForm(form())).toEqual({
+    expect(parseClientForm(form())).toMatchObject({
       ok: true,
       data: {
         name: "サンプル産業株式会社",

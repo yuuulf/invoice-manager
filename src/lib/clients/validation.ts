@@ -22,7 +22,7 @@ export type ClientFormValues = Record<keyof ClientInput, string>;
 export type ClientFormErrors = Partial<Record<keyof ClientInput, string>>;
 
 export type ClientParseResult =
-  | { ok: true; data: ClientInput }
+  | { ok: true; data: ClientInput; values: ClientFormValues }
   | { ok: false; errors: ClientFormErrors; values: ClientFormValues };
 
 export const CLIENT_CODE_PATTERN = /^[A-Z0-9]{3}$/;
@@ -100,6 +100,7 @@ export function parseClientForm(formData: FormData): ClientParseResult {
 
   return {
     ok: true,
+    values,
     data: {
       name: values.name,
       code: values.code,
