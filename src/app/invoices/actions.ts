@@ -18,21 +18,14 @@ import {
 } from "@/lib/invoices/validation";
 import { confirmInvoice } from "@/lib/ledger/repository";
 
-export type InvoiceFormState =
-  | {
-      errors: InvoiceFormErrors;
-      values: InvoiceFormValues;
-      /** フォーム全体に出すメッセージ */
-      message?: string;
-      /** 保存後の請求番号（振り直したときに表示を更新する） */
-      invoiceNumber?: string | null;
-    }
-  | {
-      /** PDF 出力に成功した。ダウンロードしてから next に移動する */
-      download: string;
-      next: string;
-    }
-  | null;
+export type InvoiceFormState = {
+  errors: InvoiceFormErrors;
+  values: InvoiceFormValues;
+  /** フォーム全体に出すメッセージ */
+  message?: string;
+  /** 保存後の請求番号（振り直したときに表示を更新する） */
+  invoiceNumber?: string | null;
+} | null;
 
 function idFrom(formData: FormData) {
   const id = Number(formData.get("id"));
@@ -69,11 +62,9 @@ async function submit(
   revalidatePath("/invoices");
   if (!output) redirect("/invoices");
 
+  // 出力後は移動先の画面でダウンロードを始める（AutoDownload）
   if (formData.get("confirm") !== "on") {
-    return {
-      download: `/invoices/${saved.id}/pdf`,
-      next: `/invoices/${saved.id}/edit`,
-    };
+    redirect(`/invoices/${saved.id}/edit?download=1`);
   }
 
   const confirmed = confirmInvoice(db, saved.id);
@@ -91,8 +82,9 @@ async function submit(
           message: "PDFを出力するには、必須項目をすべて入力してください",
         };
   }
+  // 元の請求書は消えるため、台帳の画面に移ってからダウンロードする
   revalidatePath("/ledger");
-  return { download: `/ledger/${confirmed.ledgerId}/pdf`, next: "/ledger" };
+  redirect(`/ledger?download=${confirmed.ledgerId}`);
 }
 
 export async function createInvoiceAction(

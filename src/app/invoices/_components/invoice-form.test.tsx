@@ -24,12 +24,8 @@ const clients: ClientOption[] = [
 ];
 const owners = [{ id: 9, label: "やまだデザイン（山田 太郎）" }];
 
-const router = vi.hoisted(() => ({ replace: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
-
 afterEach(() => {
   vi.restoreAllMocks();
-  router.replace.mockReset();
 });
 
 function renderNew(action = vi.fn()) {
@@ -369,22 +365,6 @@ describe("PDF 出力と確定（spec.md 7.4）", () => {
       screen.getByRole("button", { name: "確定してPDF出力" }),
     );
     expect(action.mock.calls[0][1].get("confirm")).toBe("on");
-  });
-
-  test("出力に成功したら PDF をダウンロードして次の画面に移る", async () => {
-    const click = vi
-      .spyOn(HTMLAnchorElement.prototype, "click")
-      .mockImplementation(function (this: HTMLAnchorElement) {
-        expect(this.getAttribute("href")).toBe("/ledger/3/pdf");
-      });
-    renderNew(
-      vi.fn(async () => ({ download: "/ledger/3/pdf", next: "/ledger" })),
-    );
-    await userEvent.click(screen.getByRole("button", { name: "PDF出力" }));
-    await vi.waitFor(() =>
-      expect(router.replace).toHaveBeenCalledWith("/ledger"),
-    );
-    expect(click).toHaveBeenCalledTimes(1);
   });
 
   test("出力できなかったらメッセージと、振り直した請求番号を表示する", async () => {

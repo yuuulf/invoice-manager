@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
 import { FormActions, type FormMode } from "@/components/ui/form-actions";
@@ -144,32 +143,21 @@ export function InvoiceForm({
   mode: FormMode;
 }) {
   const [state, formAction, pending] = useActionState(action, null);
-  const router = useRouter();
-  const result = state && "values" in state ? state : null;
   const values =
-    result?.values ?? (invoice ? valuesOf(invoice) : newInvoiceValues(today));
-
-  // PDF 出力に成功したら、ダウンロードしてから次の画面に移る
-  useEffect(() => {
-    if (!state || !("download" in state)) return;
-    const link = document.createElement("a");
-    link.href = state.download;
-    link.click();
-    router.replace(state.next);
-  }, [state, router]);
+    state?.values ?? (invoice ? valuesOf(invoice) : newInvoiceValues(today));
 
   return (
     <form action={formAction} noValidate className="max-w-4xl space-y-10">
       {invoice && <input type="hidden" name="id" value={invoice.id} />}
-      <FormMessage message={result?.message} />
+      <FormMessage message={state?.message} />
       {/* 送信結果が返ったら、返ってきた値で入力欄を作り直す */}
       <InvoiceFields
         key={JSON.stringify(state)}
         initial={values}
-        errors={result?.errors ?? {}}
+        errors={state?.errors ?? {}}
         invoiceNumber={
-          result?.invoiceNumber !== undefined
-            ? result.invoiceNumber
+          state?.invoiceNumber !== undefined
+            ? state.invoiceNumber
             : (invoice?.invoiceNumber ?? null)
         }
         clients={clients}
