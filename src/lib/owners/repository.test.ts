@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import type { Db } from "@/db/create-db";
 import { createTestDb } from "@/db/test-utils";
+import { saveInvoice } from "@/lib/invoices/repository";
+import { emptyDraft } from "@/lib/invoices/test-fixtures";
 import {
   archiveOwner,
   createOwner,
@@ -107,5 +109,21 @@ describe("アーカイブ・削除", () => {
     const id = onlyId();
     deleteOwner(db, id);
     expect(getOwner(db, id)).toBeUndefined();
+  });
+});
+
+describe("請求書で使っている事業主（spec.md 4.1）", () => {
+  test("アーカイブも削除もできない", () => {
+    createOwner(db, input(), { type: "keep" });
+    const id = onlyId();
+    saveInvoice(db, undefined, emptyDraft({ ownerId: id }));
+
+    expect(archiveOwner(db, id)).toEqual({
+      error: "この事業主は請求書で使われているため、アーカイブできません",
+    });
+    expect(deleteOwner(db, id)).toEqual({
+      error: "この事業主は請求書で使われているため、削除できません",
+    });
+    expect(getOwner(db, id)).toMatchObject({ archivedAt: null });
   });
 });

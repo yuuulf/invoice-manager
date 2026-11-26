@@ -1,17 +1,26 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { RowActions } from "./row-actions";
 
-function renderActions(archived: boolean) {
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+type RowAction = (formData: FormData) => Promise<{ error: string } | undefined>;
+
+function renderActions(
+  archived: boolean,
+  archiveAction: RowAction = vi.fn(async () => undefined),
+) {
   render(
     <RowActions
       id={3}
       archived={archived}
       editHref="/clients/3/edit"
-      archiveAction={vi.fn()}
-      restoreAction={vi.fn()}
-      deleteAction={vi.fn()}
+      archiveAction={archiveAction}
+      restoreAction={vi.fn(async () => undefined)}
+      deleteAction={vi.fn(async () => undefined)}
       deleteConfirmMessage="削除しますか？"
     />,
   );
@@ -49,4 +58,30 @@ test("各フォームに対象の ID を送る", async () => {
     const form = item.closest("form");
     expect(form && new FormData(form).get("id")).toBe("3");
   }
+});
+
+test("操作が失敗したらメッセージを表示する", async () => {
+  const alert = vi.spyOn(window, "alert").mockImplementation(() => {});
+  const archiveAction = vi.fn(async (formData: FormData) => {
+    expect(formData.get("id")).toBe("3");
+    return { error: "使われているため、アーカイブできません" };
+  });
+  renderActions(false, archiveAction);
+  await userEvent.click(screen.getByRole("button", { name: "その他の操作" }));
+  await userEvent.click(screen.getByRole("menuitem", { name: "アーカイブ" }));
+  await vi.waitFor(() =>
+    expect(alert).toHaveBeenCalledWith(
+      "使われているため、アーカイブできません",
+    ),
+  );
+});
+
+test("操作が成功したらメッセージは出さない", async () => {
+  const alert = vi.spyOn(window, "alert").mockImplementation(() => {});
+  const archiveAction = vi.fn(async () => undefined);
+  renderActions(false, archiveAction);
+  await userEvent.click(screen.getByRole("button", { name: "その他の操作" }));
+  await userEvent.click(screen.getByRole("menuitem", { name: "アーカイブ" }));
+  await vi.waitFor(() => expect(archiveAction).toHaveBeenCalled());
+  expect(alert).not.toHaveBeenCalled();
 });

@@ -1,5 +1,7 @@
 import { asc, eq, getTableColumns, isNotNull, isNull, sql } from "drizzle-orm";
 import type { Db } from "@/db/create-db";
+import type { RowActionResult } from "@/lib/action-result";
+import { isOwnerInUse } from "@/lib/invoices/repository";
 import { owners } from "@/db/schema";
 import type { OwnerInput, SealChange } from "./validation";
 
@@ -64,7 +66,13 @@ export function updateOwner(
     .run();
 }
 
-export function archiveOwner(db: Db, id: number) {
+/** 請求書で使っている事業主はアーカイブできない（spec.md 4.1） */
+export function archiveOwner(db: Db, id: number): RowActionResult {
+  if (isOwnerInUse(db, id)) {
+    return {
+      error: "この事業主は請求書で使われているため、アーカイブできません",
+    };
+  }
   db.update(owners)
     .set({ archivedAt: new Date() })
     .where(eq(owners.id, id))
@@ -75,6 +83,10 @@ export function restoreOwner(db: Db, id: number) {
   db.update(owners).set({ archivedAt: null }).where(eq(owners.id, id)).run();
 }
 
-export function deleteOwner(db: Db, id: number) {
+/** 請求書で使っている事業主は削除できない（spec.md 4.1） */
+export function deleteOwner(db: Db, id: number): RowActionResult {
+  if (isOwnerInUse(db, id)) {
+    return { error: "この事業主は請求書で使われているため、削除できません" };
+  }
   db.delete(owners).where(eq(owners.id, id)).run();
 }

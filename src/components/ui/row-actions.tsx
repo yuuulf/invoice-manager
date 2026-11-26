@@ -1,13 +1,24 @@
+"use client";
+
 import { Archive, ArchiveRestore, Pencil, Trash2 } from "lucide-react";
 import { ActionMenu, ActionMenuItem } from "./action-menu";
+import type { RowActionResult } from "@/lib/action-result";
 import { IconLink } from "./icon-button";
 
-type FormAction = (formData: FormData) => void | Promise<void>;
+type RowAction = (formData: FormData) => Promise<RowActionResult | void>;
+
+/** 操作が失敗したらメッセージを表示する */
+function withErrorAlert(action: RowAction) {
+  return async (formData: FormData) => {
+    const result = await action(formData);
+    if (result?.error) window.alert(result.error);
+  };
+}
 
 const menuIcon = "size-4";
 
 /**
- * 一覧の行の右端に置く操作（AGENTS.md「UI と文言」）。
+ * 一覧の行の右端に置く操作（AGENTS.md「UI と文言」）。操作が失敗したらメッセージを表示する。
  * 通常の一覧: 編集アイコン＋メニュー（アーカイブ／削除）
  * アーカイブ一覧: メニュー（アーカイブを解除／削除）
  */
@@ -23,9 +34,9 @@ export function RowActions({
   id: number;
   archived: boolean;
   editHref: string;
-  archiveAction: FormAction;
-  restoreAction: FormAction;
-  deleteAction: FormAction;
+  archiveAction: RowAction;
+  restoreAction: RowAction;
+  deleteAction: RowAction;
   deleteConfirmMessage: string;
 }) {
   return (
@@ -39,7 +50,7 @@ export function RowActions({
       )}
       <ActionMenu>
         {archived ? (
-          <form action={restoreAction}>
+          <form action={withErrorAlert(restoreAction)}>
             <input type="hidden" name="id" value={id} />
             <ActionMenuItem
               icon={<ArchiveRestore className={menuIcon} aria-hidden />}
@@ -48,14 +59,14 @@ export function RowActions({
             </ActionMenuItem>
           </form>
         ) : (
-          <form action={archiveAction}>
+          <form action={withErrorAlert(archiveAction)}>
             <input type="hidden" name="id" value={id} />
             <ActionMenuItem icon={<Archive className={menuIcon} aria-hidden />}>
               アーカイブ
             </ActionMenuItem>
           </form>
         )}
-        <form action={deleteAction}>
+        <form action={withErrorAlert(deleteAction)}>
           <input type="hidden" name="id" value={id} />
           <ActionMenuItem
             danger
