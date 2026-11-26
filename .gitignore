@@ -20,8 +20,11 @@
 # production
 /build
 
-# database
+# database（バックアップ data/backups/ も含む）
 /data/
+
+# npm run local が最新 main を取り出す専用フォルダ（git worktree）
+/.local-run/
 
 # misc
 .DS_Store

@@ -23,6 +23,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // npm run local の専用フォルダ（最新 main の複製）
+    ".local-run/**",
   ]),
 ]);
 
