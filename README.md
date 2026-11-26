@@ -1,29 +1,69 @@
 # invoice-manager
 
-請求書の作成・管理を行う Web アプリ。仕様は [spec.md](spec.md)、開発ルールは [AGENTS.md](AGENTS.md) を参照。
+請求書の作成・管理を行う Web アプリ。自分のパソコンの中だけで動き、外部とは通信しません。
+
+仕様は [spec.md](spec.md)、開発ルールは [AGENTS.md](AGENTS.md) を参照。
+
+## 必要なもの
+
+- [mise](https://mise.jdx.dev/)（Node.js のバージョン管理。使う Node.js は `mise.toml` で指定）
+
+## はじめての準備
+
+```sh
+mise install   # mise.toml の Node.js をインストール
+npm ci         # 依存パッケージをインストール
+```
+
+## 使う（ローカル実行）
+
+```sh
+npm run local
+```
+
+ビルドしてからアプリを起動します。起動したらブラウザで http://localhost:3000 を開きます。終了するときはターミナルで `Ctrl + C` を押します。
+
+- このパソコンからだけ開けます（同じネットワークの他の端末からは開けません）
+- ポートを変えるときは `PORT=3100 npm run local`
+- アプリを更新（`git pull` など）したら、`npm ci` をしてから `npm run local` で起動し直します。DB のテーブルの変更は起動後に自動で反映されます
+
+### 基本的な流れ
+
+1. **取引先** に請求先の会社を作成する（支払い期限・手数料負担・端数処理もここで設定）
+2. **事業主** に自分の情報と振込先を作成する（データ印の PNG も登録できる）
+3. **請求書** で取引先・事業主を選んで内容を入力する。途中で保存しておける
+4. 請求書の「PDF出力」でプレビューを確認する
+   - 「サンプル」: 透かし入りの PDF をダウンロード（`サンプル_請求書_{請求番号}.pdf`）
+   - 「確定する」にチェックして「発行」: 台帳に記録し、確定した PDF をダウンロード（`請求書_{請求番号}.pdf`）
+5. 発行した請求書は **台帳** にある。PDF の再ダウンロード、請求書へのコピー（作り直し用）、削除ができる
+
+### データの保存場所とバックアップ
+
+- データはすべて `data/invoice-manager.db`（SQLite）に保存されます。git には含まれません
+- バックアップは、アプリを終了してから `data/` フォルダごとコピーしてください（起動中は `-wal` などのファイルにも書き込み途中のデータがあるため）
+- 保存先を変えるときは環境変数 `DATABASE_PATH` で指定します（例: `DATABASE_PATH=~/Documents/invoice.db npm run local`）
+
+## 開発
+
+```sh
+npm run dev    # 開発サーバー（http://localhost:3000）
+```
+
+| コマンド               | 用途                                                 |
+| ---------------------- | ---------------------------------------------------- |
+| `npm run local`        | ビルドしてアプリを起動（このパソコンからのみ開ける） |
+| `npm run dev`          | 開発サーバー起動                                     |
+| `npm run lint`         | ESLint                                               |
+| `npm run format`       | Prettier で整形                                      |
+| `npm run format:check` | Prettier の差分検査                                  |
+| `npm test`             | テスト実行                                           |
+| `npm run db:generate`  | スキーマからマイグレーションを生成                   |
+| `npm run build`        | 本番ビルド                                           |
+
+PR を作ると GitHub Actions で `lint` / `format:check` / `test` / `build` が実行されます。
 
 ## 技術スタック
 
 Next.js（App Router）+ React + TypeScript / Tailwind CSS / SQLite（better-sqlite3 + Drizzle ORM）/ pdfkit / Vitest + Testing Library / Prettier / ESLint
 
 PDF の日本語フォントとして Noto Sans JP（SIL Open Font License 1.1）を `assets/fonts/` に同梱しています。
-
-## セットアップ
-
-```sh
-mise install   # mise.toml の Node.js をインストール
-npm install
-npm run dev    # http://localhost:3000（初回アクセス時に data/invoice-manager.db を作成）
-```
-
-## 主なコマンド
-
-| コマンド               | 用途                               |
-| ---------------------- | ---------------------------------- |
-| `npm run dev`          | 開発サーバー起動                   |
-| `npm run lint`         | ESLint                             |
-| `npm run format`       | Prettier で整形                    |
-| `npm run format:check` | Prettier の差分検査                |
-| `npm test`             | テスト実行                         |
-| `npm run db:generate`  | スキーマからマイグレーションを生成 |
-| `npm run build`        | 本番ビルド                         |
