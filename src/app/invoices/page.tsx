@@ -1,3 +1,5 @@
+import { PageHeader } from "@/components/ui/page-header";
+
 export default function Page() {
-  return <h1 className="text-2xl font-bold">請求書</h1>;
+  return <PageHeader title="請求書" />;
 }

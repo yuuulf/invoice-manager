@@ -1,3 +1,5 @@
+import { PageHeader } from "@/components/ui/page-header";
+
 export default function Page() {
-  return <h1 className="text-2xl font-bold">事業主</h1>;
+  return <PageHeader title="事業主" />;
 }
