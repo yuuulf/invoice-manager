@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { parseOwnerForm, SEAL_MAX_BYTES } from "./validation";
+import { SEAL_MAX_BYTES } from "./seal";
+import { parseOwnerForm } from "./validation";
 
 const PNG = Uint8Array.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0,

@@ -1,5 +1,6 @@
 import { accountTypes, type AccountType } from "@/db/schema";
 import { getText, isOneOf } from "@/lib/form-data";
+import { isPng, SEAL_MAX_BYTES } from "./seal";
 
 export type OwnerInput = {
   name: string;
@@ -29,10 +30,6 @@ export type OwnerFormErrors = Partial<Record<TextField | "seal", string>>;
 export type OwnerParseResult =
   | { ok: true; data: OwnerInput; seal: SealChange; values: OwnerFormValues }
   | { ok: false; errors: OwnerFormErrors; values: OwnerFormValues };
-
-/** データ印の上限（spec.md 6） */
-export const SEAL_MAX_BYTES = 1024 * 1024;
-const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
 const textFields: TextField[] = [
   "name",
@@ -79,10 +76,6 @@ const formatRules: Partial<Record<TextField, [RegExp, string]>> = {
   branchCode: [/^\d{3}$/, "支店番号は3桁の数字で入力してください"],
   accountNumber: [/^\d{7}$/, "口座番号は7桁の数字で入力してください"],
 };
-
-export function isPng(data: Uint8Array) {
-  return PNG_SIGNATURE.every((byte, i) => data[i] === byte);
-}
 
 async function parseSeal(
   formData: FormData,
