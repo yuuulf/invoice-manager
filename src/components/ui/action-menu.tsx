@@ -115,7 +115,7 @@ export function ActionMenuItem({
         }
         onClick?.(event);
       }}
-      className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-zinc-100 focus:bg-zinc-100 focus:outline-none ${danger ? "text-red-600" : ""} ${className}`}
+      className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm whitespace-nowrap hover:bg-zinc-100 focus:bg-zinc-100 focus:outline-none ${danger ? "text-red-600" : ""} ${className}`}
       {...props}
     >
       {icon}
