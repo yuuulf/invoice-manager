@@ -254,9 +254,11 @@ describe("送信", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "作成" }));
 
-    const quantity = await screen.findByRole("textbox", {
-      name: "1行目の数量",
-    });
+    // 送信前から同じ入力欄があるため、エラーが表示されるのを待ってから検査する
+    await screen.findByText(
+      "数量は0以上の数値（小数第2位まで）で入力してください",
+    );
+    const quantity = screen.getByRole("textbox", { name: "1行目の数量" });
     expect(quantity).toHaveValue("abc");
     expect(quantity).toBeInvalid();
     expect(quantity).toHaveAccessibleDescription(
