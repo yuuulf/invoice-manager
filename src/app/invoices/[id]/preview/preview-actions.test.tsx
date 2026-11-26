@@ -23,10 +23,10 @@ function renderActions() {
   );
 }
 
-test("編集に戻る・SAMPLE・発行の順に並ぶ", () => {
+test("編集に戻る・サンプル・発行の順に並ぶ", () => {
   renderActions();
   const back = screen.getByRole("link", { name: "編集に戻る" });
-  const sample = screen.getByRole("link", { name: "SAMPLE" });
+  const sample = screen.getByRole("link", { name: "サンプル" });
   const confirm = screen.getByRole("button", { name: "発行" });
   expect(back).toHaveAttribute("href", "/invoices/5/edit");
   expect(sample).toHaveAttribute("href", "/invoices/5/pdf");
@@ -42,7 +42,7 @@ test("編集に戻る・SAMPLE・発行の順に並ぶ", () => {
   );
 });
 
-test("「確定する」にチェックを入れるまで発行は押せない。SAMPLE はいつでもダウンロードできる", async () => {
+test("「確定する」にチェックを入れるまで発行は押せない。サンプルはいつでもダウンロードできる", async () => {
   renderActions();
   const confirm = screen.getByRole("button", { name: "発行" });
   const checkbox = screen.getByRole("checkbox", {
@@ -50,7 +50,7 @@ test("「確定する」にチェックを入れるまで発行は押せない�
   });
   expect(checkbox).not.toBeChecked();
   expect(confirm).toBeDisabled();
-  expect(screen.getByRole("link", { name: "SAMPLE" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "サンプル" })).toBeInTheDocument();
 
   await userEvent.click(checkbox);
   expect(confirm).toBeEnabled();

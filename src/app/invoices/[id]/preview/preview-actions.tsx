@@ -7,7 +7,7 @@ import { FormMessage } from "@/components/ui/form-message";
 import { confirmInvoiceAction } from "../../actions";
 
 /**
- * プレビュー画面のボタン（spec.md 7.4）: 編集に戻る / SAMPLE / 発行。
+ * プレビュー画面のボタン（spec.md 7.4）: 編集に戻る / サンプル / 発行。
  * 「確定する」にチェックを入れるまで「発行」は押せない。
  */
 export function PreviewActions({
@@ -39,7 +39,7 @@ export function PreviewActions({
           className={`${buttonClassName("secondary")} gap-2`}
         >
           <Download className="size-4" aria-hidden />
-          SAMPLE
+          サンプル
         </a>
         <label className="ml-4 flex items-center gap-2 text-sm font-bold">
           <input
