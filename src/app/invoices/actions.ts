@@ -17,7 +17,12 @@ import {
   type InvoiceFormValues,
 } from "@/lib/invoices/validation";
 import { renumberedMessage } from "@/lib/ledger/messages";
-import { confirmInvoice } from "@/lib/ledger/repository";
+import {
+  checkInvoiceNumber,
+  confirmInvoice,
+  type CheckNumberResult,
+  type ConfirmResult,
+} from "@/lib/ledger/repository";
 
 export type InvoiceFormState = {
   errors: InvoiceFormErrors;
@@ -77,6 +82,31 @@ export async function updateInvoiceAction(
 
 export type ConfirmState = { message: string } | null;
 
+const INCOMPLETE_MESSAGE =
+  "必須項目がそろっていないため発行できません。編集に戻って入力してください";
+
+/** 発行できなかった理由のメッセージ */
+function notIssuedMessage(
+  result: Exclude<CheckNumberResult | ConfirmResult, { ok: true }>,
+) {
+  return "renumbered" in result
+    ? renumberedMessage(result.renumbered)
+    : INCOMPLETE_MESSAGE;
+}
+
+/**
+ * プレビュー画面で「発行」を押した直後、確認ダイアログの前に請求番号をチェックする（spec.md 7.2, 7.4）。
+ * 振り直した場合はプレビューを表示し直し、理由のメッセージを返す。問題なければ null
+ */
+export async function checkInvoiceNumberAction(
+  invoiceId: number,
+): Promise<ConfirmState> {
+  const result = checkInvoiceNumber(getDb(), invoiceId);
+  if (result.ok) return null;
+  revalidatePath(`/invoices/${invoiceId}/preview`);
+  return { message: notIssuedMessage(result) };
+}
+
 /**
  * プレビュー画面の「発行」。台帳に記録して台帳画面に移り、確定した PDF をダウンロードする。
  * 請求番号を振り直した場合や必須項目が足りない場合は、確定せずにメッセージを返す（spec.md 7.2, 7.4）。
@@ -89,12 +119,7 @@ export async function confirmInvoiceAction(
   const confirmed = confirmInvoice(getDb(), id);
   if (!confirmed.ok) {
     revalidatePath(`/invoices/${id}/preview`);
-    return {
-      message:
-        "renumbered" in confirmed
-          ? renumberedMessage(confirmed.renumbered)
-          : "必須項目がそろっていないため発行できません。編集に戻って入力してください",
-    };
+    return { message: notIssuedMessage(confirmed) };
   }
   revalidatePath("/invoices", "layout");
   revalidatePath("/ledger", "layout");

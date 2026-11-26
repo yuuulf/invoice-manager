@@ -4,11 +4,16 @@ import { Download } from "lucide-react";
 import { useActionState, useState } from "react";
 import { Button, ButtonLink, buttonClassName } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
-import { confirmInvoiceAction } from "../../actions";
+import {
+  checkInvoiceNumberAction,
+  confirmInvoiceAction,
+  type ConfirmState,
+} from "../../actions";
 
 /**
  * プレビュー画面のボタン（spec.md 7.4）: 編集に戻る / サンプル / 発行。
  * 「確定する」にチェックを入れるまで「発行」は押せない。
+ * 「発行」を押したら、確認ダイアログの前に請求番号をチェックする（spec.md 7.2）。
  */
 export function PreviewActions({
   invoiceId,
@@ -20,7 +25,21 @@ export function PreviewActions({
   fileName: string;
 }) {
   const [state, formAction, pending] = useActionState(
-    confirmInvoiceAction,
+    async (prev: ConfirmState, formData: FormData): Promise<ConfirmState> => {
+      // 1. 請求番号をチェック。振り直したらメッセージを出して止める
+      const checked = await checkInvoiceNumberAction(invoiceId);
+      if (checked) return checked;
+      // 2. 確認ダイアログ
+      if (
+        !window.confirm(
+          "発行すると台帳に記録され、この請求書は変更できなくなります。発行しますか？",
+        )
+      ) {
+        return null;
+      }
+      // 3. 発行（台帳に記録して台帳画面へ）
+      return confirmInvoiceAction(prev, formData);
+    },
     null,
   );
   const [confirmChecked, setConfirmChecked] = useState(false);
@@ -53,15 +72,6 @@ export function PreviewActions({
           type="submit"
           className="gap-2"
           disabled={pending || !confirmChecked}
-          onClick={(event) => {
-            if (
-              !window.confirm(
-                "発行すると台帳に記録され、この請求書は変更できなくなります。発行しますか？",
-              )
-            ) {
-              event.preventDefault();
-            }
-          }}
         >
           <Download className="size-4" aria-hidden />
           発行

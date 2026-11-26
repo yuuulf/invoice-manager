@@ -17,6 +17,7 @@ import {
 import type { InvoiceDraftInput } from "@/lib/invoices/validation";
 import { deleteOwner } from "@/lib/owners/repository";
 import {
+  checkInvoiceNumber,
   confirmInvoice,
   copyLedgerToInvoice,
   deleteLedgerEntry,
@@ -170,6 +171,34 @@ describe("請求番号の連番（spec.md 7.2）", () => {
 
     confirm(b);
     expect(listLedger(db)).toHaveLength(2);
+  });
+
+  test("発行前のチェックで振り直しが必要なら振り直して知らせ、台帳には記録しない", () => {
+    const a = createInvoice();
+    const b = createInvoice();
+    confirm(a);
+
+    expect(checkInvoiceNumber(db, b)).toEqual({
+      ok: false,
+      renumbered: {
+        from: "IABC-202611-001",
+        to: "IABC-202611-002",
+        reason: "duplicate",
+      },
+    });
+    expect(getInvoice(db, b)?.invoiceNumber).toBe("IABC-202611-002");
+    expect(listLedger(db)).toHaveLength(1);
+
+    // 振り直した後はチェックを通る
+    expect(checkInvoiceNumber(db, b)).toEqual({ ok: true });
+  });
+
+  test("発行前のチェックは、必須項目がそろっていなければエラーを返す", () => {
+    const id = createInvoice({ subject: null });
+    expect(checkInvoiceNumber(db, id)).toEqual({
+      ok: false,
+      errors: { subject: "件名を入力してください" },
+    });
   });
 
   test("台帳の番号が削除されて空いたら、小さい番号に振り直して確定を止める（空き）", () => {

@@ -68,6 +68,54 @@ export type Renumbered = {
 };
 
 /**
+ * 請求番号が台帳から見て正しい連番（spec.md 7.2）でなければ振り直し、その内容を返す。
+ * 正しければ null
+ */
+function renumberIfNeeded(
+  tx: DbOrTx,
+  invoiceId: number,
+  snapshot: Pick<InvoiceSnapshot, "invoiceNumber" | "issueDate" | "client">,
+): Renumbered | null {
+  const prefix = invoiceNumberPrefix(snapshot.client.code, snapshot.issueDate);
+  const taken = ledgerNumbersWithPrefix(tx, prefix);
+  const expected = nextInvoiceNumber(prefix, taken);
+  const current = snapshot.invoiceNumber;
+  if (current === expected) return null;
+
+  tx.update(invoices)
+    .set({ invoiceNumber: expected, updatedAt: new Date() })
+    .where(eq(invoices.id, invoiceId))
+    .run();
+  const reason = taken.includes(current)
+    ? "duplicate"
+    : current > expected
+      ? "gap"
+      : "behind";
+  return { from: current, to: expected, reason };
+}
+
+export type CheckNumberResult =
+  | { ok: true }
+  | { ok: false; errors: InvoiceFormErrors }
+  | { ok: false; renumbered: Renumbered };
+
+/**
+ * 発行の前に請求番号をチェックし、必要なら振り直す（spec.md 7.2）。
+ * 「発行」を押した直後、確認ダイアログを出す前に使う（spec.md 7.4）。
+ */
+export function checkInvoiceNumber(
+  db: Db,
+  invoiceId: number,
+): CheckNumberResult {
+  return db.transaction((tx) => {
+    const prepared = prepare(tx, invoiceId);
+    if (!prepared.ok) return prepared;
+    const renumbered = renumberIfNeeded(tx, invoiceId, prepared.snapshot);
+    return renumbered ? { ok: false, renumbered } : { ok: true };
+  });
+}
+
+/**
  * 請求書を確定して台帳に記録し、元の請求書を一覧から消す（spec.md 7.4）。
  * 請求番号が台帳から見て正しい連番でなければ、振り直して確定を止める（spec.md 7.2）。
  */
@@ -77,28 +125,10 @@ export function confirmInvoice(db: Db, invoiceId: number): ConfirmResult {
     if (!prepared.ok) return prepared;
     const { snapshot, seal } = prepared;
 
-    const prefix = invoiceNumberPrefix(
-      snapshot.client.code,
-      snapshot.issueDate,
-    );
-    const taken = ledgerNumbersWithPrefix(tx, prefix);
-    const expected = nextInvoiceNumber(prefix, taken);
-    const current = snapshot.invoiceNumber;
-    if (current !== expected) {
-      tx.update(invoices)
-        .set({ invoiceNumber: expected, updatedAt: new Date() })
-        .where(eq(invoices.id, invoiceId))
-        .run();
-      const reason = taken.includes(current)
-        ? "duplicate"
-        : current > expected
-          ? "gap"
-          : "behind";
-      return {
-        ok: false,
-        renumbered: { from: current, to: expected, reason },
-      };
-    }
+    // 発行ボタンを押した直後にもチェックしているが、確認ダイアログの間に
+    // 別の請求書が発行されることがあるため、記録する直前にもう一度チェックする
+    const renumbered = renumberIfNeeded(tx, invoiceId, snapshot);
+    if (renumbered) return { ok: false, renumbered };
 
     const { id } = tx
       .insert(ledgerEntries)
