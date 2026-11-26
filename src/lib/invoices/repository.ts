@@ -164,17 +164,15 @@ export function saveInvoice(
     }
     if (Object.keys(errors).length > 0) return { ok: false, errors };
 
-    // 採番は台帳の番号だけを見る。確定していない請求書の番号は連番に含めない（spec.md 7.2）
+    // 採番は台帳の番号だけを見る。確定していない請求書の番号は連番に含めない（spec.md 7.2）。
+    // 振り直すのは取引先か請求日の年月が変わったときだけ。台帳との重複や空きは発行時にチェックし、
+    // 理由を利用者に伝えてから振り直す（confirmInvoice）
     let invoiceNumber: string | null = null;
     if (client && input.issueDate) {
       const prefix = invoiceNumberPrefix(client.code, input.issueDate);
-      const taken = ledgerNumbersWithPrefix(tx, prefix);
-      const keep =
-        current?.invoiceNumber?.startsWith(prefix) &&
-        !taken.includes(current.invoiceNumber);
-      invoiceNumber = keep
-        ? current!.invoiceNumber
-        : nextInvoiceNumber(prefix, taken);
+      invoiceNumber = current?.invoiceNumber?.startsWith(prefix)
+        ? current.invoiceNumber
+        : nextInvoiceNumber(prefix, ledgerNumbersWithPrefix(tx, prefix));
     }
 
     const period = periodOf(input);

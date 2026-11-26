@@ -209,12 +209,16 @@ describe("請求番号の連番（spec.md 7.2）", () => {
     });
   });
 
-  test("台帳に同じ番号があれば、保存時にも振り直す", () => {
+  test("保存では台帳との重複を振り直さず、発行時に理由を伝えて振り直す", () => {
     const a = createInvoice();
     const b = createInvoice();
     confirm(a);
     saveInvoice(db, b, completeDraft({ subject: "変更" }));
-    expect(getInvoice(db, b)?.invoiceNumber).toBe("IABC-202611-002");
+    expect(getInvoice(db, b)?.invoiceNumber).toBe("IABC-202611-001");
+    expect(confirmInvoice(db, b)).toMatchObject({
+      ok: false,
+      renumbered: { from: "IABC-202611-001", reason: "duplicate" },
+    });
   });
 
   test("台帳を削除するとその番号は採番の対象から外れる", () => {
