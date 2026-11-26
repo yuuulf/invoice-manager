@@ -17,30 +17,42 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Next.js（App Router）+ React + TypeScript
 - Tailwind CSS
-- SQLite
+- SQLite（better-sqlite3 + Drizzle ORM）
 - Node.js のバージョンは mise（`mise.toml`）で管理する。`mise install` で揃えてから作業する
 - フォーマット: Prettier / 静的解析: ESLint
 - テスト: Vitest + Testing Library
 
 ## コマンド
 
-| コマンド               | 用途                      |
-| ---------------------- | ------------------------- |
-| `npm run dev`          | 開発サーバー起動          |
-| `npm run lint`         | ESLint                    |
-| `npm run format`       | Prettier で整形           |
-| `npm run format:check` | Prettier の差分検査       |
-| `npm test`             | Vitest でテスト実行       |
-| `npm run test:watch`   | Vitest を監視モードで実行 |
-| `npm run build`        | 本番ビルド                |
+| コマンド               | 用途                               |
+| ---------------------- | ---------------------------------- |
+| `npm run dev`          | 開発サーバー起動                   |
+| `npm run lint`         | ESLint                             |
+| `npm run format`       | Prettier で整形                    |
+| `npm run format:check` | Prettier の差分検査                |
+| `npm test`             | Vitest でテスト実行                |
+| `npm run test:watch`   | Vitest を監視モードで実行          |
+| `npm run db:generate`  | スキーマからマイグレーションを生成 |
+| `npm run build`        | 本番ビルド                         |
 
 ## ディレクトリ構成・コーディング規約
 
 - Next.js 公式ドキュメント（`node_modules/next/dist/docs/` のバージョン一致版）の Project Structure・規約に従う。独自の構成を持ち込まない
-- アプリのコードは `src/` 配下に置く（ルーティングは `src/app/`）。import は `@/*` エイリアス（`src/*`）を使う
+- アプリのコードは `src/` 配下に置く。import は `@/*` エイリアス（`src/*`）を使う
+  - `src/app/`: ルーティング（ページ・レイアウト）。特定のルートでしか使わないものは、そのルート配下の `_components/` などに置く
+  - `src/components/`: 複数画面で使う共通 UI コンポーネント
+  - `src/db/`: DB 接続（`index.ts` の `getDb()`）とテーブル定義（`schema.ts`）
 - 外部通信をしない（spec.md PRE-1）。`next/font/google` や CDN など、実行時・ビルド時に外部へ取りに行くものを使わない
 - Server Components を基本とし、状態やイベントが必要な箇所だけ `"use client"` にする
 - データ更新は Server Actions / Route Handlers を使う。SQLite へのアクセスはサーバー側コードに閉じ、クライアントへ持ち込まない
+
+## データベース（SQLite + Drizzle ORM）
+
+- DB には `@/db` の `getDb()` で接続する（`server-only` 付き）
+- テーブル定義を変えたら `npm run db:generate` でマイグレーション（`drizzle/`）を生成し、同じコミットに含める。生成済みのマイグレーションは手で書き換えない
+- マイグレーションは `getDb()` の初回接続時に自動で適用される。テストでは `createDb(":memory:")` の後に `runMigrations(db)` を呼ぶ
+- DB ファイルは `data/`（git 管理外）。保存先は環境変数 `DATABASE_PATH` で変更できる
+- `cacheComponents` が有効なため、better-sqlite3 の同期クエリはそのままだとビルド時にプリレンダーされる。リクエストごとに最新データを表示するページでは、クエリの前に `connection()`（`next/server`）を呼ぶ
 - フォーマットと静的解析のルールは Prettier / ESLint の設定で機械的に強制する。設定で表現できるルールは AGENTS.md に書かず設定ファイルに書く
 - ルールを無効化するコメント（`eslint-disable` 等）は理由をコメントで添え、最小範囲にとどめる
 
