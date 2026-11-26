@@ -42,12 +42,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - `src/app/`: ルーティング（ページ・レイアウト）。特定のルートでしか使わないものは、そのルート配下の `_components/` などに置く
   - `src/components/`: 複数画面で使う UI。汎用部品（ボタン・入力欄・ラジオボタン・見出し等）は `src/components/ui/`
   - `src/db/`: DB 接続（`index.ts` の `getDb()`）とテーブル定義（`schema.ts`）
+  - `src/lib/pdf/`: 請求書 PDF の生成（pdfkit）。文言の組み立て（`invoice-text.ts`）と描画（`render-invoice.ts`）を分け、文言はテストで spec.md 8 章と突き合わせる
+  - `assets/fonts/`: PDF 用の日本語フォント（Noto Sans JP、OFL）。外部から取得しない
   - `src/lib/<機能>/`: 画面に依存しない処理。入力チェック（`validation.ts`）、DB 操作（`repository.ts`。`db` を引数で受け取りテストではインメモリ DB を渡す）、選択肢の表示名（`labels.ts`）など
   - Server Actions は各ルートの `actions.ts` に置き、入力チェックと DB 操作は `src/lib/` を呼ぶだけにする
 - 外部通信をしない（spec.md PRE-1）。`next/font/google` や CDN など、実行時・ビルド時に外部へ取りに行くものを使わない
 - Server Components を基本とし、状態やイベントが必要な箇所だけ `"use client"` にする
 - データ更新は Server Actions / Route Handlers を使う。SQLite へのアクセスはサーバー側コードに閉じ、クライアントへ持ち込まない
 - `cacheComponents` が有効なため、リクエスト時のデータ（`searchParams`・`params`・DB クエリ）を読むコンポーネントは `<Suspense>` で囲む。`usePathname()` も動的ルートでは Suspense が必要（サイドバーはフォールバック付きで囲み済み）
+- `cacheComponents` では前に開いた画面が入力状態ごと残る（React の `<Activity>`）。編集フォームはデータの更新日時（`updatedAt`）を `key` にし、作成フォームなど開くたびにまっさらにしたいものは `ResetOnNavigation` で囲む
+- Server Action でデータを変えたら `revalidatePath("/{一覧のパス}", "layout")` で配下の画面をまとめて再検証する
 - フォーマットと静的解析のルールは Prettier / ESLint の設定で機械的に強制する。設定で表現できるルールは AGENTS.md に書かず設定ファイルに書く
 - ルールを無効化するコメント（`eslint-disable` 等）は理由をコメントで添え、最小範囲にとどめる
 
@@ -55,7 +59,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - DB には `@/db` の `getDb()` で接続する（`server-only` 付き）
 - テーブル定義を変えたら `npm run db:generate` でマイグレーション（`drizzle/`）を生成し、同じコミットに含める。生成済みのマイグレーションは手で書き換えない
-- マイグレーションは `getDb()` の初回接続時に自動で適用される。テストでは `@/db/test-utils` の `createTestDb()`（マイグレーション適用済みのインメモリ DB）を使う
+- マイグレーションは `getDb()` で自動で適用される（開発サーバーを起動したまま追加しても、次の接続で適用される）。テストでは `@/db/test-utils` の `createTestDb()`（マイグレーション適用済みのインメモリ DB）を使う
 - DB ファイルは `data/`（git 管理外）。保存先は環境変数 `DATABASE_PATH` で変更できる
 - `cacheComponents` が有効なため、better-sqlite3 の同期クエリはそのままだとビルド時にプリレンダーされる。リクエストごとに最新データを表示するページでは、クエリの前に `connection()`（`next/server`）を呼ぶ
 
@@ -70,6 +74,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - 行の操作が失敗したとき（使用中で削除できない等）は、Server Action が `RowActionResult`（`{ error }`）を返し、`RowActions` がメッセージを表示する
 - 入力欄は `TextField` / `SelectField` / `TextAreaField` / `RadioGroup` を使う（ラベル・注釈・エラーの関連付けは `Field` が行う）
 - 項目が多いフォームは `FormSection` でまとまり（例: 基本情報、振込先）に分ける
+- フォーム全体に関わるエラー（例: 必須項目が足りず出力できない）は `FormMessage` で先頭に表示する
+- 取り消せない重要な操作（台帳の削除など）は `TypedConfirmDialog` で決められた文字列（請求番号など）を入力させてから実行する
+- 請求書の PDF 出力は、保存してプレビュー画面（`/invoices/[id]/preview`、PDF を `?inline=1` で埋め込み表示）を開き、ダウンロード・確定はそこで行う。確定のように別画面へ移ってからダウンロードさせるときは、`?download=...` 付きの画面へリダイレクトして `AutoDownload` を表示する
 - 作成・編集フォームの下部は `FormActions` を使う。入力欄の右端に揃え、左から「キャンセル」「作成」（作成画面）／「保存」（編集画面）の順に並べる。「新規作成」「新規登録」とは書かない
 - 入力エラーは項目の下に表示し、入力欄に `aria-invalid` と `aria-describedby` で関連付ける（`TextField`・`RadioGroup` が対応済み）
 - 画面の文言は日本語で統一する。同じ概念には同じ用語を使う（例: 「取引先」「事業主」「請求書」「台帳」「確定」「アーカイブ」「作成」「保存」）。用語は `spec.md` に合わせ、新しい用語が必要なら spec.md に追記する

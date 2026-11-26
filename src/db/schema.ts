@@ -6,6 +6,7 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import type { InvoiceSnapshot } from "@/lib/invoices/snapshot";
 
 const timestamps = {
   createdAt: integer("created_at", { mode: "timestamp" })
@@ -146,3 +147,26 @@ export const invoiceItems = sqliteTable(
 );
 
 export type InvoiceItem = typeof invoiceItems.$inferSelect;
+
+/**
+ * 台帳（spec.md 7.4）。確定した請求書の PDF を、後から取引先・事業主が変わっても
+ * 同じ内容で出力できるよう、出力に必要なデータ一式（snapshot）とデータ印を保存する。
+ * 一覧表示・検索用に一部の値は列にも持つ。
+ */
+export const ledgerEntries = sqliteTable("ledger_entries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  invoiceNumber: text("invoice_number").notNull().unique(),
+  issueDate: text("issue_date").notNull(),
+  clientName: text("client_name").notNull(),
+  subject: text("subject").notNull(),
+  total: integer("total").notNull(),
+  snapshot: text("snapshot", { mode: "json" })
+    .$type<InvoiceSnapshot>()
+    .notNull(),
+  seal: blob("seal", { mode: "buffer" }),
+  confirmedAt: integer("confirmed_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export type LedgerEntry = typeof ledgerEntries.$inferSelect;

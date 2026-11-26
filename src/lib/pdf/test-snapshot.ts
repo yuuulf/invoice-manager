@@ -1,0 +1,65 @@
+import type { InvoiceSnapshot } from "@/lib/invoices/snapshot";
+
+/** テスト用: サンプル PDF と同じ内容の出力データ */
+export const sampleSnapshot: InvoiceSnapshot = {
+  invoiceNumber: "IABC-202611-001",
+  issueDate: "2026-11-30",
+  subject: "Webサイト保守・改修",
+  period: { type: "month", month: "2026-11" },
+  dueDate: "2026-12-31",
+  notes:
+    "いつもお世話になっております。\nお手数ですがお支払いは上記銀行口座にお振込みくださいますようお願い申し上げます。",
+  clientId: 1,
+  ownerId: 1,
+  client: {
+    code: "ABC",
+    name: "サンプル産業株式会社",
+    department: null,
+    contactName: null,
+    feeBearer: "client",
+    rounding: "floor",
+  },
+  owner: {
+    name: "山田 太郎",
+    tradeName: "やまだデザイン",
+    postalCode: "1500001",
+    address1: "東京都渋谷区神宮前",
+    address2: "1-2-3 サンプルビル4F",
+    phone: "03-1234-5678",
+    email: "taro@example.com",
+    bankName: "やよい銀行",
+    bankCode: "0123",
+    branchName: "渋谷支店",
+    branchCode: "456",
+    accountType: "ordinary",
+    accountNumber: "1234567",
+    accountHolder: "ヤマダデザイン ヤマダタロウ",
+  },
+  items: [
+    {
+      position: 0,
+      description: "Webサイト保守（11月分）",
+      quantity: 100,
+      unit: "式",
+      unitPrice: 50000,
+      amount: 50000,
+    },
+    {
+      position: 1,
+      description: "バナー制作",
+      quantity: 300,
+      unit: "点",
+      unitPrice: 8000,
+      amount: 24000,
+    },
+    {
+      position: 2,
+      description: "LP改修作業",
+      quantity: 1200,
+      unit: "時間",
+      unitPrice: 5000,
+      amount: 60000,
+    },
+  ],
+  total: 134000,
+};

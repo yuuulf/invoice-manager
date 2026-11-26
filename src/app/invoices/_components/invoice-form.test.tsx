@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import type { InvoiceWithItems } from "@/lib/invoices/repository";
 import { InvoiceForm, type ClientOption } from "./invoice-form";
 
@@ -23,6 +23,10 @@ const clients: ClientOption[] = [
   },
 ];
 const owners = [{ id: 9, label: "やまだデザイン（山田 太郎）" }];
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function renderNew(action = vi.fn()) {
   render(
@@ -317,4 +321,59 @@ test("編集では保存済みの内容と請求番号を表示する", () => {
     "いつもお世話になっております。",
   );
   expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
+});
+
+describe("PDF 出力（spec.md 7.4）", () => {
+  test("PDF出力は intent=output で送信する。確定はプレビュー画面で行う", async () => {
+    const action = renderNew();
+    expect(
+      screen.queryByRole("checkbox", { name: /確定/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/ダウンロードと確定はプレビュー画面で行います/),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "PDF出力" }));
+    expect(action.mock.calls[0][1].get("intent")).toBe("output");
+  });
+
+  test("保存ボタンでは intent を送らない", async () => {
+    const action = renderNew();
+    await userEvent.click(screen.getByRole("button", { name: "作成" }));
+    expect(action.mock.calls[0][1].get("intent")).toBeNull();
+  });
+
+  test("出力できなかったらメッセージを表示する", async () => {
+    renderNew(
+      vi.fn(async (_state: unknown, formData: FormData) => ({
+        errors: { subject: "件名を入力してください" },
+        values: {
+          clientId: "",
+          ownerId: "",
+          issueDate: "2026-11-30",
+          subject: String(formData.get("subject")),
+          periodType: "",
+          periodMonth: "",
+          periodStart: "",
+          periodEnd: "",
+          dueDate: "",
+          dueDateManual: false,
+          notes: "",
+          items: Array.from({ length: 10 }, () => ({
+            description: "",
+            quantity: "",
+            unit: "",
+            unitPrice: "",
+          })),
+        },
+        message: "PDFを出力するには、必須項目をすべて入力してください",
+      })),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "PDF出力" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "PDFを出力するには、必須項目をすべて入力してください",
+    );
+    expect(
+      screen.getByRole("textbox", { name: /件名/ }),
+    ).toHaveAccessibleDescription("件名を入力してください");
+  });
 });

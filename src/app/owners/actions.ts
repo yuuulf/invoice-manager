@@ -36,7 +36,7 @@ export async function createOwnerAction(
   if (!parsed.ok) return { errors: parsed.errors, values: parsed.values };
 
   createOwner(getDb(), parsed.data, parsed.seal);
-  revalidatePath("/owners");
+  revalidatePath("/owners", "layout");
   redirect("/owners");
 }
 
@@ -48,7 +48,7 @@ export async function updateOwnerAction(
   if (!parsed.ok) return { errors: parsed.errors, values: parsed.values };
 
   updateOwner(getDb(), idFrom(formData), parsed.data, parsed.seal);
-  revalidatePath("/owners");
+  revalidatePath("/owners", "layout");
   redirect("/owners");
 }
 
@@ -56,19 +56,19 @@ export async function archiveOwnerAction(
   formData: FormData,
 ): Promise<RowActionResult> {
   const result = archiveOwner(getDb(), idFrom(formData));
-  revalidatePath("/owners");
+  revalidatePath("/owners", "layout");
   return result;
 }
 
 export async function restoreOwnerAction(formData: FormData) {
   restoreOwner(getDb(), idFrom(formData));
-  revalidatePath("/owners");
+  revalidatePath("/owners", "layout");
 }
 
 export async function deleteOwnerAction(
   formData: FormData,
 ): Promise<RowActionResult> {
   const result = deleteOwner(getDb(), idFrom(formData));
-  revalidatePath("/owners");
+  revalidatePath("/owners", "layout");
   return result;
 }

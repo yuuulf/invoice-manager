@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
 import { FormActions, type FormMode } from "@/components/ui/form-actions";
+import { FormMessage } from "@/components/ui/form-message";
 import { FormSection } from "@/components/ui/form-section";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { SelectField } from "@/components/ui/select-field";
@@ -148,6 +149,7 @@ export function InvoiceForm({
   return (
     <form action={formAction} noValidate className="max-w-4xl space-y-10">
       {invoice && <input type="hidden" name="id" value={invoice.id} />}
+      <FormMessage message={state?.message} />
       {/* 送信結果が返ったら、返ってきた値で入力欄を作り直す */}
       <InvoiceFields
         key={JSON.stringify(state)}
@@ -157,8 +159,31 @@ export function InvoiceForm({
         clients={clients}
         owners={owners}
       />
+      <OutputSection pending={pending} />
       <FormActions mode={mode} cancelHref="/invoices" pending={pending} />
     </form>
+  );
+}
+
+/** PDF 出力。保存してプレビュー画面を開き、確定はそこで行う（spec.md 7.4） */
+function OutputSection({ pending }: { pending: boolean }) {
+  return (
+    <FormSection title="出力">
+      <div className="space-y-2">
+        <Button
+          type="submit"
+          name="intent"
+          value="output"
+          variant="secondary"
+          disabled={pending}
+        >
+          PDF出力
+        </Button>
+        <p className="text-sm text-zinc-500">
+          入力内容を保存して、PDFのプレビューを表示します。ダウンロードと確定はプレビュー画面で行います。
+        </p>
+      </div>
+    </FormSection>
   );
 }
 

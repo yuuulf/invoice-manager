@@ -1,5 +1,5 @@
 import { asc, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
-import type { Db } from "@/db/create-db";
+import type { Db, DbOrTx } from "@/db/create-db";
 import {
   clients,
   invoiceItems,
@@ -17,6 +17,7 @@ import {
   nextInvoiceNumber,
   type Period,
 } from "./calc";
+import { ledgerNumbersWithPrefix } from "@/lib/ledger/numbers";
 import type { InvoiceDraftInput, InvoiceFormErrors } from "./validation";
 
 export type InvoiceWithItems = Invoice & { items: InvoiceItem[] };
@@ -109,7 +110,10 @@ export function listInvoices(
   }));
 }
 
-export function getInvoice(db: Db, id: number): InvoiceWithItems | undefined {
+export function getInvoice(
+  db: DbOrTx,
+  id: number,
+): InvoiceWithItems | undefined {
   const invoice = db.select().from(invoices).where(eq(invoices.id, id)).get();
   if (!invoice) return undefined;
   const items = db
@@ -160,14 +164,15 @@ export function saveInvoice(
     }
     if (Object.keys(errors).length > 0) return { ok: false, errors };
 
+    // 採番は台帳の番号だけを見る。確定していない請求書の番号は連番に含めない（spec.md 7.2）。
+    // 振り直すのは取引先か請求日の年月が変わったときだけ。台帳との重複や空きは発行時にチェックし、
+    // 理由を利用者に伝えてから振り直す（confirmInvoice）
     let invoiceNumber: string | null = null;
     if (client && input.issueDate) {
       const prefix = invoiceNumberPrefix(client.code, input.issueDate);
       invoiceNumber = current?.invoiceNumber?.startsWith(prefix)
         ? current.invoiceNumber
-        : // 確定していない請求書の番号は連番に含めない（spec.md 7.2）。
-          // TODO(台帳): 台帳を実装したら台帳の請求番号を渡す
-          nextInvoiceNumber(prefix, []);
+        : nextInvoiceNumber(prefix, ledgerNumbersWithPrefix(tx, prefix));
     }
 
     const period = periodOf(input);

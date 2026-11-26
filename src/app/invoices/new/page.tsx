@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/ui/page-header";
+import { ResetOnNavigation } from "@/components/ui/reset-on-navigation";
 import { getDb } from "@/db";
 import { toDateString } from "@/lib/invoices/calc";
 import { createInvoiceAction } from "../actions";
@@ -11,13 +12,15 @@ async function NewForm() {
   await connection();
   const { clients, owners } = loadFormOptions(getDb());
   return (
-    <InvoiceForm
-      action={createInvoiceAction}
-      clients={clients}
-      owners={owners}
-      today={toDateString(new Date())}
-      mode="create"
-    />
+    <ResetOnNavigation>
+      <InvoiceForm
+        action={createInvoiceAction}
+        clients={clients}
+        owners={owners}
+        today={toDateString(new Date())}
+        mode="create"
+      />
+    </ResetOnNavigation>
   );
 }
 

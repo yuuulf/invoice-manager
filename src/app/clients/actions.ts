@@ -39,7 +39,7 @@ export async function createClientAction(
   if (!result.ok) {
     return { errors: result.errors, values: parsed.values };
   }
-  revalidatePath("/clients");
+  revalidatePath("/clients", "layout");
   redirect("/clients");
 }
 
@@ -54,7 +54,7 @@ export async function updateClientAction(
   if (!result.ok) {
     return { errors: result.errors, values: parsed.values };
   }
-  revalidatePath("/clients");
+  revalidatePath("/clients", "layout");
   redirect("/clients");
 }
 
@@ -62,19 +62,19 @@ export async function archiveClientAction(
   formData: FormData,
 ): Promise<RowActionResult> {
   const result = archiveClient(getDb(), idFrom(formData));
-  revalidatePath("/clients");
+  revalidatePath("/clients", "layout");
   return result;
 }
 
 export async function restoreClientAction(formData: FormData) {
   restoreClient(getDb(), idFrom(formData));
-  revalidatePath("/clients");
+  revalidatePath("/clients", "layout");
 }
 
 export async function deleteClientAction(
   formData: FormData,
 ): Promise<RowActionResult> {
   const result = deleteClient(getDb(), idFrom(formData));
-  revalidatePath("/clients");
+  revalidatePath("/clients", "layout");
   return result;
 }

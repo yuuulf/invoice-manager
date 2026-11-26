@@ -53,3 +53,22 @@ export function IconLink({
     </Link>
   );
 }
+
+/** アイコンだけの通常のリンク。ファイルのダウンロードなど、画面遷移しないリンクに使う */
+export function IconAnchor({
+  label,
+  icon,
+  className = "",
+  ...props
+}: Omit<CommonProps, "active"> & Omit<ComponentProps<"a">, "children">) {
+  return (
+    <a
+      aria-label={label}
+      title={label}
+      className={`${base} ${className}`}
+      {...props}
+    >
+      {icon}
+    </a>
+  );
+}
