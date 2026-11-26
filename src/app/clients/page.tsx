@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { ArchiveToggle } from "@/components/ui/archive-toggle";
 import { ButtonLink } from "@/components/ui/button";
-import { ListTabs } from "@/components/ui/list-tabs";
 import { PageHeader } from "@/components/ui/page-header";
 import { getDb } from "@/db";
 import { listClients } from "@/lib/clients/repository";
@@ -19,7 +19,15 @@ async function ClientList({
 
   return (
     <>
-      <ListTabs basePath="/clients" archived={archived} />
+      <PageHeader
+        title={archived ? "取引先（アーカイブ一覧）" : "取引先"}
+        actions={
+          <>
+            <ArchiveToggle basePath="/clients" archived={archived} />
+            <ButtonLink href="/clients/new">新規登録</ButtonLink>
+          </>
+        }
+      />
       <ClientTable clients={clients} archived={archived} />
     </>
   );
@@ -27,14 +35,8 @@ async function ClientList({
 
 export default function Page({ searchParams }: PageProps<"/clients">) {
   return (
-    <>
-      <PageHeader
-        title="取引先"
-        actions={<ButtonLink href="/clients/new">新規登録</ButtonLink>}
-      />
-      <Suspense fallback={<p className="text-zinc-500">読み込み中…</p>}>
-        <ClientList searchParams={searchParams} />
-      </Suspense>
-    </>
+    <Suspense fallback={<p className="text-zinc-500">読み込み中…</p>}>
+      <ClientList searchParams={searchParams} />
+    </Suspense>
   );
 }

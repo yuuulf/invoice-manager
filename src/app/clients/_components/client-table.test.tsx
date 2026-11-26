@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import type { Client } from "@/db/schema";
 import { ClientTable } from "./client-table";
@@ -24,32 +25,37 @@ const client: Client = {
   updatedAt: new Date(),
 };
 
-test("一覧では編集・アーカイブ・削除ができる", () => {
+function menuItemNames() {
+  return within(screen.getByRole("menu"))
+    .getAllByRole("menuitem")
+    .map((item) => item.textContent);
+}
+
+test("一覧では編集アイコンの右のメニューにアーカイブ・削除がある", async () => {
   render(<ClientTable clients={[client]} archived={false} />);
   const row = screen.getByRole("row", { name: /サンプル産業株式会社/ });
-  expect(within(row).getByRole("link", { name: "編集" })).toHaveAttribute(
-    "href",
-    "/clients/1/edit",
+  const edit = within(row).getByRole("link", { name: "編集" });
+  const menu = within(row).getByRole("button", { name: "その他の操作" });
+  expect(edit).toHaveAttribute("href", "/clients/1/edit");
+  expect(edit.compareDocumentPosition(menu)).toBe(
+    Node.DOCUMENT_POSITION_FOLLOWING,
   );
-  expect(
-    within(row).getByRole("button", { name: "アーカイブ" }),
-  ).toBeInTheDocument();
-  expect(within(row).getByRole("button", { name: "削除" })).toBeInTheDocument();
-  expect(
-    within(row).queryByRole("button", { name: "元に戻す" }),
-  ).not.toBeInTheDocument();
+
+  await userEvent.click(menu);
+  expect(menuItemNames()).toEqual(["アーカイブ", "削除"]);
 });
 
-test("アーカイブ一覧では元に戻す・削除ができる", () => {
+test("アーカイブ一覧では編集アイコンを出さず、メニューにアーカイブを解除・削除がある", async () => {
   render(<ClientTable clients={[client]} archived />);
   const row = screen.getByRole("row", { name: /サンプル産業株式会社/ });
   expect(
-    within(row).getByRole("button", { name: "元に戻す" }),
-  ).toBeInTheDocument();
-  expect(within(row).getByRole("button", { name: "削除" })).toBeInTheDocument();
-  expect(
     within(row).queryByRole("link", { name: "編集" }),
   ).not.toBeInTheDocument();
+
+  await userEvent.click(
+    within(row).getByRole("button", { name: "その他の操作" }),
+  );
+  expect(menuItemNames()).toEqual(["アーカイブを解除", "削除"]);
 });
 
 test("0件のときは案内を表示する", () => {

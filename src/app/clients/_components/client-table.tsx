@@ -1,12 +1,14 @@
-import { ButtonLink } from "@/components/ui/button";
-import { Button } from "@/components/ui/button";
-import { ConfirmButton } from "@/components/ui/confirm-button";
+import { Archive, ArchiveRestore, Pencil, Trash2 } from "lucide-react";
+import { ActionMenu, ActionMenuItem } from "@/components/ui/action-menu";
+import { IconLink } from "@/components/ui/icon-button";
 import type { Client } from "@/db/schema";
 import {
   archiveClientAction,
   deleteClientAction,
   restoreClientAction,
 } from "../actions";
+
+const menuIcon = "size-4";
 
 export function ClientTable({
   clients,
@@ -45,40 +47,48 @@ export function ClientTable({
             <td className="px-3 py-2">{client.name}</td>
             <td className="px-3 py-2">{client.department}</td>
             <td className="px-3 py-2">{client.contactName}</td>
-            <td className="px-3 py-2">
-              <div className="flex justify-end gap-2">
-                {archived ? (
-                  <form action={restoreClientAction}>
-                    <input type="hidden" name="id" value={client.id} />
-                    <Button type="submit" variant="secondary">
-                      元に戻す
-                    </Button>
-                  </form>
-                ) : (
-                  <>
-                    <ButtonLink
-                      href={`/clients/${client.id}/edit`}
-                      variant="secondary"
-                    >
-                      編集
-                    </ButtonLink>
+            <td className="px-3 py-1">
+              <div className="flex items-center justify-end gap-1">
+                {!archived && (
+                  <IconLink
+                    href={`/clients/${client.id}/edit`}
+                    label="編集"
+                    icon={<Pencil className="size-5" aria-hidden />}
+                  />
+                )}
+                <ActionMenu>
+                  {archived ? (
+                    <form action={restoreClientAction}>
+                      <input type="hidden" name="id" value={client.id} />
+                      <ActionMenuItem
+                        icon={
+                          <ArchiveRestore className={menuIcon} aria-hidden />
+                        }
+                      >
+                        アーカイブを解除
+                      </ActionMenuItem>
+                    </form>
+                  ) : (
                     <form action={archiveClientAction}>
                       <input type="hidden" name="id" value={client.id} />
-                      <Button type="submit" variant="secondary">
+                      <ActionMenuItem
+                        icon={<Archive className={menuIcon} aria-hidden />}
+                      >
                         アーカイブ
-                      </Button>
+                      </ActionMenuItem>
                     </form>
-                  </>
-                )}
-                <form action={deleteClientAction}>
-                  <input type="hidden" name="id" value={client.id} />
-                  <ConfirmButton
-                    variant="danger"
-                    confirmMessage={`取引先「${client.name}」を削除しますか？この操作は元に戻せません。`}
-                  >
-                    削除
-                  </ConfirmButton>
-                </form>
+                  )}
+                  <form action={deleteClientAction}>
+                    <input type="hidden" name="id" value={client.id} />
+                    <ActionMenuItem
+                      danger
+                      icon={<Trash2 className={menuIcon} aria-hidden />}
+                      confirmMessage={`取引先「${client.name}」を削除しますか？この操作は元に戻せません。`}
+                    >
+                      削除
+                    </ActionMenuItem>
+                  </form>
+                </ActionMenu>
               </div>
             </td>
           </tr>

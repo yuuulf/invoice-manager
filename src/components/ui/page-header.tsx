@@ -10,7 +10,7 @@ export function PageHeader({
   return (
     <div className="mb-6 flex items-center justify-between gap-4">
       <h1 className="text-2xl font-bold">{title}</h1>
-      {actions && <div className="flex gap-2">{actions}</div>}
+      {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
   );
 }
