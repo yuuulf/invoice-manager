@@ -1,5 +1,11 @@
 import { sql } from "drizzle-orm";
-import { blob, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  blob,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
 const timestamps = {
   createdAt: integer("created_at", { mode: "timestamp" })
@@ -79,3 +85,64 @@ export const owners = sqliteTable("owners", {
 });
 
 export type Owner = typeof owners.$inferSelect;
+
+/** 対象期間の種類（spec.md 7.1） */
+export const periodTypes = ["month", "range"] as const;
+export type PeriodType = (typeof periodTypes)[number];
+
+/**
+ * 作成中の請求書（spec.md 7）。必須項目がそろっていなくても保存できるため、ほとんどの列は null 可。
+ * 日付は "YYYY-MM-DD"、年月は "YYYY-MM" の文字列で持つ。
+ */
+export const invoices = sqliteTable("invoices", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  clientId: integer("client_id").references(() => clients.id, {
+    onDelete: "restrict",
+  }),
+  ownerId: integer("owner_id").references(() => owners.id, {
+    onDelete: "restrict",
+  }),
+  /** 未採番なら null（spec.md 7.2） */
+  invoiceNumber: text("invoice_number"),
+  issueDate: text("issue_date"),
+  subject: text("subject"),
+  periodType: text("period_type", { enum: periodTypes }),
+  periodMonth: text("period_month"),
+  periodStart: text("period_start"),
+  periodEnd: text("period_end"),
+  dueDate: text("due_date"),
+  /** 支払い期限を手動で変更したか。true の間は自動算出で上書きしない */
+  dueDateManual: integer("due_date_manual", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  notes: text("notes"),
+  archivedAt: integer("archived_at", { mode: "timestamp" }),
+  ...timestamps,
+});
+
+export type Invoice = typeof invoices.$inferSelect;
+
+/** 請求書の明細（spec.md 7.3）。最大 10 行で、行番号 position は 0〜9 */
+export const invoiceItems = sqliteTable(
+  "invoice_items",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    invoiceId: integer("invoice_id")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+    description: text("description"),
+    /** 数量を 100 倍した整数（小数第 2 位まで） */
+    quantity: integer("quantity"),
+    unit: text("unit"),
+    unitPrice: integer("unit_price"),
+  },
+  (table) => [
+    uniqueIndex("invoice_items_invoice_position_unique").on(
+      table.invoiceId,
+      table.position,
+    ),
+  ],
+);
+
+export type InvoiceItem = typeof invoiceItems.$inferSelect;
