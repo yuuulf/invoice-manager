@@ -51,7 +51,7 @@ async function Preview({
       <PreviewActions
         invoiceId={invoice.id}
         sampleHref={pdfHref}
-        fileName={invoicePdfFileName(invoiceNumber)}
+        fileName={invoicePdfFileName(invoiceNumber, { sample: true })}
       />
     </div>
   );

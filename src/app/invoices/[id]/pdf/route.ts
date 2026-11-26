@@ -28,5 +28,6 @@ export async function GET(
   });
   return pdfResponse(pdf, output.snapshot.invoiceNumber, {
     inline: new URL(request.url).searchParams.get("inline") === "1",
+    sample: true,
   });
 }

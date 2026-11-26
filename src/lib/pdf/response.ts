@@ -1,6 +1,12 @@
-/** 出力ファイル名「請求書_{請求番号}.pdf」（spec.md 7.5） */
-export function invoicePdfFileName(invoiceNumber: string) {
-  return `請求書_${invoiceNumber}.pdf`;
+/**
+ * 出力ファイル名（spec.md 7.5）。
+ * 確定した PDF は「請求書_{請求番号}.pdf」、確定前（SAMPLE）は「サンプル_請求書_{請求番号}.pdf」
+ */
+export function invoicePdfFileName(
+  invoiceNumber: string,
+  { sample = false }: { sample?: boolean } = {},
+) {
+  return `${sample ? "サンプル_" : ""}請求書_${invoiceNumber}.pdf`;
 }
 
 /**
@@ -10,13 +16,17 @@ export function invoicePdfFileName(invoiceNumber: string) {
 export function pdfResponse(
   pdf: Buffer,
   invoiceNumber: string,
-  { inline = false }: { inline?: boolean } = {},
+  {
+    inline = false,
+    sample = false,
+  }: { inline?: boolean; sample?: boolean } = {},
 ): Response {
-  const fileName = invoicePdfFileName(invoiceNumber);
+  const fileName = invoicePdfFileName(invoiceNumber, { sample });
+  const asciiName = `${sample ? "sample_" : ""}invoice_${invoiceNumber}.pdf`;
   return new Response(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="invoice_${invoiceNumber}.pdf"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+      "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
       "Cache-Control": "no-store",
     },
   });

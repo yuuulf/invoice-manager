@@ -1,13 +1,14 @@
 "use client";
 
+import { Download } from "lucide-react";
 import { useActionState, useState } from "react";
 import { Button, ButtonLink, buttonClassName } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
 import { confirmInvoiceAction } from "../../actions";
 
 /**
- * プレビュー画面のボタン（spec.md 7.4）: 編集に戻る / SAMPLEをダウンロード / 確定してダウンロード。
- * 「確定する」にチェックを入れるまで「確定してダウンロード」は押せない。
+ * プレビュー画面のボタン（spec.md 7.4）: 編集に戻る / SAMPLE / 発行。
+ * 「確定する」にチェックを入れるまで「発行」は押せない。
  */
 export function PreviewActions({
   invoiceId,
@@ -35,9 +36,10 @@ export function PreviewActions({
         <a
           href={sampleHref}
           download={fileName}
-          className={buttonClassName("secondary")}
+          className={`${buttonClassName("secondary")} gap-2`}
         >
-          SAMPLEをダウンロード
+          <Download className="size-4" aria-hidden />
+          SAMPLE
         </a>
         <label className="ml-4 flex items-center gap-2 text-sm font-bold">
           <input
@@ -45,22 +47,24 @@ export function PreviewActions({
             checked={confirmChecked}
             onChange={(e) => setConfirmChecked(e.target.checked)}
           />
-          確定する
+          確定する（台帳に記録し、以後は変更できません）
         </label>
         <Button
           type="submit"
+          className="gap-2"
           disabled={pending || !confirmChecked}
           onClick={(event) => {
             if (
               !window.confirm(
-                "確定すると台帳に記録され、この請求書は変更できなくなります。確定してダウンロードしますか？",
+                "発行すると台帳に記録され、この請求書は変更できなくなります。発行しますか？",
               )
             ) {
               event.preventDefault();
             }
           }}
         >
-          確定してダウンロード
+          <Download className="size-4" aria-hidden />
+          発行
         </Button>
       </div>
     </form>

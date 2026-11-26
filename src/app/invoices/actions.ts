@@ -77,7 +77,7 @@ export async function updateInvoiceAction(
 export type ConfirmState = { message: string } | null;
 
 /**
- * プレビュー画面の「確定してダウンロード」。台帳に記録して台帳画面に移り、確定した PDF をダウンロードする。
+ * プレビュー画面の「発行」。台帳に記録して台帳画面に移り、確定した PDF をダウンロードする。
  * 請求番号を振り直した場合や必須項目が足りない場合は、確定せずにメッセージを返す（spec.md 7.2, 7.4）。
  */
 export async function confirmInvoiceAction(
