@@ -57,7 +57,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - DB には `@/db` の `getDb()` で接続する（`server-only` 付き）
 - テーブル定義を変えたら `npm run db:generate` でマイグレーション（`drizzle/`）を生成し、同じコミットに含める。生成済みのマイグレーションは手で書き換えない
-- マイグレーションは `getDb()` の初回接続時に自動で適用される。テストでは `@/db/test-utils` の `createTestDb()`（マイグレーション適用済みのインメモリ DB）を使う
+- マイグレーションは `getDb()` で自動で適用される（開発サーバーを起動したまま追加しても、次の接続で適用される）。テストでは `@/db/test-utils` の `createTestDb()`（マイグレーション適用済みのインメモリ DB）を使う
 - DB ファイルは `data/`（git 管理外）。保存先は環境変数 `DATABASE_PATH` で変更できる
 - `cacheComponents` が有効なため、better-sqlite3 の同期クエリはそのままだとビルド時にプリレンダーされる。リクエストごとに最新データを表示するページでは、クエリの前に `connection()`（`next/server`）を呼ぶ
 
