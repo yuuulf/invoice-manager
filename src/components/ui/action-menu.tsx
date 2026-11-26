@@ -2,6 +2,8 @@
 
 import { EllipsisVertical } from "lucide-react";
 import {
+  createContext,
+  useContext,
   useEffect,
   useId,
   useRef,
@@ -12,8 +14,11 @@ import {
 } from "react";
 import { IconButton } from "./icon-button";
 
+/** 項目を選んだらメニューを閉じるための関数 */
+const CloseMenuContext = createContext<() => void>(() => {});
+
 /**
- * 縦三点リーダーのアイコンボタンで開くメニュー。
+ * 縦三点リーダーのアイコンボタンで開くメニュー。項目を選ぶと閉じる。
  * 行ごとの「その他の操作」（アーカイブ・削除など）を入れる。
  */
 export function ActionMenu({
@@ -79,7 +84,9 @@ export function ActionMenu({
           onKeyDown={onMenuKeyDown}
           className="absolute right-0 z-10 mt-1 min-w-40 rounded border border-zinc-200 bg-white py-1 shadow-lg"
         >
-          {children}
+          <CloseMenuContext.Provider value={() => setOpen(false)}>
+            {children}
+          </CloseMenuContext.Provider>
         </div>
       )}
     </div>
@@ -104,6 +111,7 @@ export function ActionMenuItem({
   type = "submit",
   ...props
 }: ActionMenuItemProps) {
+  const closeMenu = useContext(CloseMenuContext);
   return (
     <button
       type={type}
@@ -114,6 +122,8 @@ export function ActionMenuItem({
           return;
         }
         onClick?.(event);
+        // フォームの送信が始まってから閉じる
+        setTimeout(closeMenu, 0);
       }}
       className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm whitespace-nowrap hover:bg-zinc-100 focus:bg-zinc-100 focus:outline-none ${danger ? "text-red-600" : ""} ${className}`}
       {...props}

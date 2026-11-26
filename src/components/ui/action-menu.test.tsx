@@ -85,3 +85,13 @@ test("確認付きの項目は OK したときだけ送信する", async () => {
   await userEvent.click(screen.getByRole("menuitem", { name: "削除" }));
   expect(onDelete).toHaveBeenCalledTimes(1);
 });
+
+test("項目を選ぶとメニューを閉じる", async () => {
+  const { onArchive } = renderMenu();
+  await userEvent.click(trigger());
+  await userEvent.click(screen.getByRole("menuitem", { name: "アーカイブ" }));
+  expect(onArchive).toHaveBeenCalledTimes(1);
+  await vi.waitFor(() =>
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument(),
+  );
+});
