@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Sidebar } from "@/components/sidebar";
+import { Suspense } from "react";
+import { Sidebar, SidebarNav } from "@/components/sidebar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,7 +12,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ja" className="h-full antialiased">
       <body className="flex min-h-full">
-        <Sidebar />
+        <Suspense fallback={<SidebarNav pathname={null} />}>
+          <Sidebar />
+        </Suspense>
         <main className="flex-1 p-8">{children}</main>
       </body>
     </html>

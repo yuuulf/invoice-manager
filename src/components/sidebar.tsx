@@ -14,9 +14,11 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function Sidebar() {
-  const pathname = usePathname();
-
+/**
+ * サイドバーの表示部分。pathname が null のときは現在のページを強調しない
+ * （動的ルートのプリレンダー時に使う Suspense のフォールバック用）。
+ */
+export function SidebarNav({ pathname }: { pathname: string | null }) {
   return (
     <nav
       aria-label="メインメニュー"
@@ -25,7 +27,7 @@ export function Sidebar() {
       <p className="px-4 py-5 text-lg font-bold">請求書管理</p>
       <ul>
         {navItems.map(({ href, label }) => {
-          const active = isActive(pathname, href);
+          const active = pathname !== null && isActive(pathname, href);
           return (
             <li key={href}>
               <Link
@@ -45,4 +47,9 @@ export function Sidebar() {
       </ul>
     </nav>
   );
+}
+
+/** 現在のページを強調するサイドバー。レイアウトでは Suspense で囲んで使う。 */
+export function Sidebar() {
+  return <SidebarNav pathname={usePathname()} />;
 }
