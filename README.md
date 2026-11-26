@@ -4,7 +4,9 @@
 
 ## 技術スタック
 
-Next.js（App Router）+ React + TypeScript / Tailwind CSS / SQLite（better-sqlite3 + Drizzle ORM）/ Vitest + Testing Library / Prettier / ESLint
+Next.js（App Router）+ React + TypeScript / Tailwind CSS / SQLite（better-sqlite3 + Drizzle ORM）/ pdfkit / Vitest + Testing Library / Prettier / ESLint
+
+PDF の日本語フォントとして Noto Sans JP（SIL Open Font License 1.1）を `assets/fonts/` に同梱しています。
 
 ## セットアップ
 
