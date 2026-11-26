@@ -17,13 +17,7 @@ async function EditForm({
   const client = /^\d+$/.test(id) ? getClient(getDb(), Number(id)) : undefined;
   if (!client) notFound();
 
-  return (
-    <ClientForm
-      action={updateClientAction}
-      client={client}
-      submitLabel="変更する"
-    />
-  );
+  return <ClientForm action={updateClientAction} client={client} mode="edit" />;
 }
 
 export default function Page({ params }: PageProps<"/clients/[id]/edit">) {

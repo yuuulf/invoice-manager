@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { Button, ButtonLink } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
+import { FormActions, type FormMode } from "@/components/ui/form-actions";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { TextField } from "@/components/ui/text-field";
 import {
@@ -52,11 +52,11 @@ function valuesOf(client: Client): ClientFormValues {
 export function ClientForm({
   action,
   client,
-  submitLabel,
+  mode,
 }: {
   action: Action;
   client?: Client;
-  submitLabel: string;
+  mode: FormMode;
 }) {
   const [state, formAction, pending] = useActionState(action, null);
   const values = state?.values ?? (client ? valuesOf(client) : newClientValues);
@@ -145,14 +145,7 @@ export function ClientForm({
           label: roundingLabels[value],
         }))}
       />
-      <div className="flex gap-2">
-        <Button type="submit" disabled={pending}>
-          {submitLabel}
-        </Button>
-        <ButtonLink href="/clients" variant="secondary">
-          キャンセル
-        </ButtonLink>
-      </div>
+      <FormActions mode={mode} cancelHref="/clients" pending={pending} />
     </form>
   );
 }

@@ -20,7 +20,7 @@ const client: Client = {
 };
 
 test("新規登録では支払い期限=翌月末日、手数料負担=指定なし、端数処理=切り捨てが選ばれている", () => {
-  render(<ClientForm action={vi.fn()} submitLabel="登録する" />);
+  render(<ClientForm action={vi.fn()} mode="create" />);
   expect(screen.getByRole("radio", { name: "翌月末日" })).toBeChecked();
   expect(screen.getByRole("radio", { name: "指定なし" })).toBeChecked();
   expect(screen.getByRole("radio", { name: "切り捨て" })).toBeChecked();
@@ -28,16 +28,14 @@ test("新規登録では支払い期限=翌月末日、手数料負担=指定な
 });
 
 test("支払い期限は請求書ごとに変更できる旨の注釈を表示する", () => {
-  render(<ClientForm action={vi.fn()} submitLabel="登録する" />);
+  render(<ClientForm action={vi.fn()} mode="create" />);
   expect(
     screen.getByRole("group", { name: /支払い期限/ }),
   ).toHaveAccessibleDescription("支払い期限は請求書ごとに手動で変更できます。");
 });
 
 test("編集では登録済みの内容が入っている", () => {
-  render(
-    <ClientForm action={vi.fn()} client={client} submitLabel="変更する" />,
-  );
+  render(<ClientForm action={vi.fn()} client={client} mode="edit" />);
   expect(screen.getByRole("textbox", { name: /会社名/ })).toHaveValue(
     "サンプル産業株式会社",
   );
@@ -67,7 +65,7 @@ test("送信すると入力内容をアクションに渡し、返ってきた�
       rounding: "floor",
     },
   }));
-  render(<ClientForm action={action} submitLabel="登録する" />);
+  render(<ClientForm action={action} mode="create" />);
 
   await userEvent.type(
     screen.getByRole("textbox", { name: /会社名/ }),
@@ -77,7 +75,7 @@ test("送信すると入力内容をアクションに渡し、返ってきた�
     screen.getByRole("textbox", { name: /取引先コード/ }),
     "ABC",
   );
-  await userEvent.click(screen.getByRole("button", { name: "登録する" }));
+  await userEvent.click(screen.getByRole("button", { name: "登録" }));
 
   const formData = action.mock.calls[0][1];
   expect(formData.get("name")).toBe("テスト商事");
