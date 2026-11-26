@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import type { InvoiceWithItems } from "@/lib/invoices/repository";
 import { InvoiceForm, type ClientOption } from "./invoice-form";
 
@@ -23,6 +23,14 @@ const clients: ClientOption[] = [
   },
 ];
 const owners = [{ id: 9, label: "やまだデザイン（山田 太郎）" }];
+
+const router = vi.hoisted(() => ({ replace: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => router }));
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  router.replace.mockReset();
+});
 
 function renderNew(action = vi.fn()) {
   render(
@@ -317,4 +325,100 @@ test("編集では保存済みの内容と請求番号を表示する", () => {
     "いつもお世話になっております。",
   );
   expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
+});
+
+describe("PDF 出力と確定（spec.md 7.4）", () => {
+  test("確定のチェックで説明とボタンの文言が変わる", async () => {
+    renderNew();
+    expect(
+      screen.getByText(/「SAMPLE」の透かしが入ります/),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("checkbox", { name: "確定する" }));
+    expect(screen.getByText(/台帳に記録され/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "確定してPDF出力" }),
+    ).toBeInTheDocument();
+  });
+
+  test("PDF出力は intent=output で送信する", async () => {
+    const action = renderNew();
+    await userEvent.click(screen.getByRole("button", { name: "PDF出力" }));
+    const formData: FormData = action.mock.calls[0][1];
+    expect(formData.get("intent")).toBe("output");
+    expect(formData.get("confirm")).toBeNull();
+  });
+
+  test("保存ボタンでは intent を送らない", async () => {
+    const action = renderNew();
+    await userEvent.click(screen.getByRole("button", { name: "作成" }));
+    expect(action.mock.calls[0][1].get("intent")).toBeNull();
+  });
+
+  test("確定して出力するときは確認し、キャンセルなら送信しない", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false);
+    const action = renderNew();
+    await userEvent.click(screen.getByRole("checkbox", { name: "確定する" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "確定してPDF出力" }),
+    );
+    expect(confirm).toHaveBeenCalled();
+    expect(action).not.toHaveBeenCalled();
+
+    confirm.mockReturnValueOnce(true);
+    await userEvent.click(
+      screen.getByRole("button", { name: "確定してPDF出力" }),
+    );
+    expect(action.mock.calls[0][1].get("confirm")).toBe("on");
+  });
+
+  test("出力に成功したら PDF をダウンロードして次の画面に移る", async () => {
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(function (this: HTMLAnchorElement) {
+        expect(this.getAttribute("href")).toBe("/ledger/3/pdf");
+      });
+    renderNew(
+      vi.fn(async () => ({ download: "/ledger/3/pdf", next: "/ledger" })),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "PDF出力" }));
+    await vi.waitFor(() =>
+      expect(router.replace).toHaveBeenCalledWith("/ledger"),
+    );
+    expect(click).toHaveBeenCalledTimes(1);
+  });
+
+  test("出力できなかったらメッセージと、振り直した請求番号を表示する", async () => {
+    renderNew(
+      vi.fn(async (_state: unknown, formData: FormData) => ({
+        errors: {},
+        values: {
+          clientId: "",
+          ownerId: "",
+          issueDate: "2026-11-30",
+          subject: String(formData.get("subject")),
+          periodType: "",
+          periodMonth: "",
+          periodStart: "",
+          periodEnd: "",
+          dueDate: "",
+          dueDateManual: false,
+          notes: "",
+          items: Array.from({ length: 10 }, () => ({
+            description: "",
+            quantity: "",
+            unit: "",
+            unitPrice: "",
+          })),
+        },
+        invoiceNumber: "IABC-202611-002",
+        message:
+          "請求番号が台帳と重複するため IABC-202611-002 に振り直しました",
+      })),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "PDF出力" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "振り直しました",
+    );
+    expect(screen.getByText("IABC-202611-002")).toBeInTheDocument();
+  });
 });

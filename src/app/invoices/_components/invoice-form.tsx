@@ -1,9 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
 import { FormActions, type FormMode } from "@/components/ui/form-actions";
+import { FormMessage } from "@/components/ui/form-message";
 import { FormSection } from "@/components/ui/form-section";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { SelectField } from "@/components/ui/select-field";
@@ -142,23 +144,87 @@ export function InvoiceForm({
   mode: FormMode;
 }) {
   const [state, formAction, pending] = useActionState(action, null);
+  const router = useRouter();
+  const result = state && "values" in state ? state : null;
   const values =
-    state?.values ?? (invoice ? valuesOf(invoice) : newInvoiceValues(today));
+    result?.values ?? (invoice ? valuesOf(invoice) : newInvoiceValues(today));
+
+  // PDF 出力に成功したら、ダウンロードしてから次の画面に移る
+  useEffect(() => {
+    if (!state || !("download" in state)) return;
+    const link = document.createElement("a");
+    link.href = state.download;
+    link.click();
+    router.replace(state.next);
+  }, [state, router]);
 
   return (
     <form action={formAction} noValidate className="max-w-4xl space-y-10">
       {invoice && <input type="hidden" name="id" value={invoice.id} />}
+      <FormMessage message={result?.message} />
       {/* 送信結果が返ったら、返ってきた値で入力欄を作り直す */}
       <InvoiceFields
         key={JSON.stringify(state)}
         initial={values}
-        errors={state?.errors ?? {}}
-        invoiceNumber={invoice?.invoiceNumber ?? null}
+        errors={result?.errors ?? {}}
+        invoiceNumber={
+          result?.invoiceNumber !== undefined
+            ? result.invoiceNumber
+            : (invoice?.invoiceNumber ?? null)
+        }
         clients={clients}
         owners={owners}
       />
+      <OutputSection pending={pending} />
       <FormActions mode={mode} cancelHref="/invoices" pending={pending} />
     </form>
+  );
+}
+
+/** PDF 出力と確定（spec.md 7.4） */
+function OutputSection({ pending }: { pending: boolean }) {
+  const [confirm, setConfirm] = useState(false);
+  return (
+    <FormSection title="出力">
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 font-bold">
+          <input
+            type="checkbox"
+            name="confirm"
+            checked={confirm}
+            onChange={(e) => setConfirm(e.target.checked)}
+          />
+          確定する
+        </label>
+        <p className="text-sm text-zinc-500">
+          {confirm
+            ? "確定すると台帳に記録され、この請求書は変更できなくなります（台帳から削除・コピーは可能）。"
+            : "確定せずに出力すると、PDFに「SAMPLE」の透かしが入ります。台帳には記録しません。"}
+        </p>
+        <Button
+          type="submit"
+          name="intent"
+          value="output"
+          variant="secondary"
+          disabled={pending}
+          onClick={(event) => {
+            if (
+              confirm &&
+              !window.confirm(
+                "確定すると台帳に記録され、この請求書は変更できなくなります。確定してPDFを出力しますか？",
+              )
+            ) {
+              event.preventDefault();
+            }
+          }}
+        >
+          {confirm ? "確定してPDF出力" : "PDF出力"}
+        </Button>
+        <p className="text-sm text-zinc-500">
+          出力する前に、入力内容を保存します。
+        </p>
+      </div>
+    </FormSection>
   );
 }
 

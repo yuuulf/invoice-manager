@@ -1,4 +1,4 @@
-import type { Client, Owner } from "@/db/schema";
+import type { Client, Invoice, InvoiceItem, Owner } from "@/db/schema";
 import { calcAmount, type Period } from "./calc";
 import { periodOf, type InvoiceWithItems } from "./repository";
 import { itemFieldName, type InvoiceFormErrors } from "./validation";
@@ -50,12 +50,31 @@ export type InvoiceSnapshot = {
   total: number;
 };
 
+/** 必須チェックに使う項目。保存前のフォーム入力（InvoiceDraftInput）も渡せる */
+export type CompletenessInput = Pick<
+  Invoice,
+  | "clientId"
+  | "ownerId"
+  | "issueDate"
+  | "subject"
+  | "periodType"
+  | "periodMonth"
+  | "periodStart"
+  | "periodEnd"
+  | "dueDate"
+> & {
+  items: Pick<
+    InvoiceItem,
+    "position" | "description" | "quantity" | "unit" | "unitPrice"
+  >[];
+};
+
 /**
  * PDF 出力（確定を含む）の前に、必須項目がそろっているかをチェックする（spec.md 7.1, 7.3）。
  * エラーのキーは請求書フォームの項目名に合わせる。
  */
 export function checkCompleteness(
-  invoice: InvoiceWithItems,
+  invoice: CompletenessInput,
 ): InvoiceFormErrors {
   const errors: InvoiceFormErrors = {};
   if (invoice.clientId === null) errors.clientId = "取引先を選択してください";
