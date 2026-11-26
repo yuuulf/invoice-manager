@@ -24,16 +24,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## コマンド
 
-| コマンド               | 用途                               |
-| ---------------------- | ---------------------------------- |
-| `npm run dev`          | 開発サーバー起動                   |
-| `npm run lint`         | ESLint（警告が1件でもあれば失敗）  |
-| `npm run format`       | Prettier で整形                    |
-| `npm run format:check` | Prettier の差分検査                |
-| `npm test`             | Vitest でテスト実行                |
-| `npm run test:watch`   | Vitest を監視モードで実行          |
-| `npm run db:generate`  | スキーマからマイグレーションを生成 |
-| `npm run build`        | 本番ビルド                         |
+| コマンド               | 用途                                     |
+| ---------------------- | ---------------------------------------- |
+| `npm run local`        | ビルドしてアプリを起動（127.0.0.1 のみ） |
+| `npm run dev`          | 開発サーバー起動                         |
+| `npm run lint`         | ESLint（警告が1件でもあれば失敗）        |
+| `npm run format`       | Prettier で整形                          |
+| `npm run format:check` | Prettier の差分検査                      |
+| `npm test`             | Vitest でテスト実行                      |
+| `npm run test:watch`   | Vitest を監視モードで実行                |
+| `npm run db:generate`  | スキーマからマイグレーションを生成       |
+| `npm run build`        | 本番ビルド                               |
 
 ## ディレクトリ構成・コーディング規約
 
