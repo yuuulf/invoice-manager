@@ -27,7 +27,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | コマンド               | 用途                               |
 | ---------------------- | ---------------------------------- |
 | `npm run dev`          | 開発サーバー起動                   |
-| `npm run lint`         | ESLint                             |
+| `npm run lint`         | ESLint（警告が1件でもあれば失敗）  |
 | `npm run format`       | Prettier で整形                    |
 | `npm run format:check` | Prettier の差分検査                |
 | `npm test`             | Vitest でテスト実行                |
@@ -64,9 +64,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - UI コンポーネントは共通コンポーネント（ボタン、入力欄、テーブル、ダイアログ等）を作って再利用し、画面ごとに見た目や振る舞いをばらつかせない。`src/components/ui/` にあるものは必ずそれを使い、足りなければそこに追加する
 - 一覧画面の操作は次の配置で統一する（アイコンは `lucide-react`、アイコンだけのボタンは `IconButton` / `IconLink` で操作名を `label` に渡す）
   - ページ見出しの右: 「作成」ボタン、その右にアーカイブ一覧への切り替え（アーカイブアイコンのみ。`ArchiveToggle`、`?view=archived`）
-  - 一覧の各行の右端: 編集アイコンボタン、その右に縦三点リーダーのアイコンボタン（`ActionMenu`）。メニューには「アーカイブ」「削除」を入れる
+  - 一覧の各行の右端: 編集アイコンボタン、その右に縦三点リーダーのアイコンボタン（`ActionMenu`）。メニューには「アーカイブ」「削除」を入れる。アーカイブ・削除がある一覧は `RowActions` を使う
   - アーカイブ一覧の各行: 編集アイコンは出さず、縦三点リーダーのメニューに「アーカイブを解除」「削除」を入れる
   - 元に戻せない操作（削除など）は `ActionMenuItem` の `confirmMessage` で確認してから実行する
+- 項目が多いフォームは `FormSection` でまとまり（例: 基本情報、振込先）に分ける
 - 作成・編集フォームの下部は `FormActions` を使う。入力欄の右端に揃え、左から「キャンセル」「作成」（作成画面）／「保存」（編集画面）の順に並べる。「新規作成」「新規登録」とは書かない
 - 入力エラーは項目の下に表示し、入力欄に `aria-invalid` と `aria-describedby` で関連付ける（`TextField`・`RadioGroup` が対応済み）
 - 画面の文言は日本語で統一する。同じ概念には同じ用語を使う（例: 「取引先」「事業主」「請求書」「台帳」「確定」「アーカイブ」「作成」「保存」）。用語は `spec.md` に合わせ、新しい用語が必要なら spec.md に追記する

@@ -1,0 +1,21 @@
+CREATE TABLE `owners` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`name` text NOT NULL,
+	`trade_name` text,
+	`postal_code` text NOT NULL,
+	`address1` text NOT NULL,
+	`address2` text,
+	`phone` text NOT NULL,
+	`email` text NOT NULL,
+	`bank_name` text NOT NULL,
+	`bank_code` text NOT NULL,
+	`branch_name` text NOT NULL,
+	`branch_code` text NOT NULL,
+	`account_type` text DEFAULT 'ordinary' NOT NULL,
+	`account_number` text NOT NULL,
+	`account_holder` text NOT NULL,
+	`seal` blob,
+	`archived_at` integer,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
+);

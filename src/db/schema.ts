@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { blob, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 const timestamps = {
   createdAt: integer("created_at", { mode: "timestamp" })
@@ -47,3 +47,35 @@ export const clients = sqliteTable("clients", {
 });
 
 export type Client = typeof clients.$inferSelect;
+
+/** 振込先の科目（spec.md 6.1） */
+export const accountTypes = ["ordinary", "checking"] as const;
+export type AccountType = (typeof accountTypes)[number];
+
+/** 事業主（spec.md 6） */
+export const owners = sqliteTable("owners", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  tradeName: text("trade_name"),
+  /** 7 桁の数字（ハイフンなし） */
+  postalCode: text("postal_code").notNull(),
+  address1: text("address1").notNull(),
+  address2: text("address2"),
+  phone: text("phone").notNull(),
+  email: text("email").notNull(),
+  bankName: text("bank_name").notNull(),
+  bankCode: text("bank_code").notNull(),
+  branchName: text("branch_name").notNull(),
+  branchCode: text("branch_code").notNull(),
+  accountType: text("account_type", { enum: accountTypes })
+    .notNull()
+    .default("ordinary"),
+  accountNumber: text("account_number").notNull(),
+  accountHolder: text("account_holder").notNull(),
+  /** データ印（PNG） */
+  seal: blob("seal", { mode: "buffer" }),
+  archivedAt: integer("archived_at", { mode: "timestamp" }),
+  ...timestamps,
+});
+
+export type Owner = typeof owners.$inferSelect;
