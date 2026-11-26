@@ -21,11 +21,19 @@ npm ci         # 依存パッケージをインストール
 npm run local
 ```
 
-ビルドしてからアプリを起動します。起動したらブラウザで http://localhost:3000 を開きます。終了するときはターミナルで `Ctrl + C` を押します。
+GitHub の **最新の main** を取り出して起動します。起動したら、表示された URL（通常は http://localhost:3110）をブラウザで開きます。終了するときはターミナルで `Ctrl + C` を押します。
+
+起動のたびに次のことを行います。
+
+1. origin/main の最新を、専用フォルダ `.local-run/` に取り出す（git worktree。今作業中のブランチや未コミットの変更には影響しない）
+2. `package-lock.json` が変わっていれば依存パッケージを入れ直し、ビルドする
+3. DB をバックアップする（下の「データの保存場所とバックアップ」）
+4. 3110 番ポートで起動する。使われていれば 3111、3112… と空いている番号を使う
 
 - このパソコンからだけ開けます（同じネットワークの他の端末からは開けません）
-- ポートを変えるときは `PORT=3100 npm run local`
-- アプリを更新（`git pull` など）したら、`npm ci` をしてから `npm run local` で起動し直します。DB のテーブルの変更は起動後に自動で反映されます
+- 最初の起動は依存パッケージのインストールがあるため時間がかかります
+- 始める番号を変えるときは `PORT=3200 npm run local`
+- DB のテーブルの変更は起動後に自動で反映されます
 
 ### 基本的な流れ
 
@@ -39,8 +47,10 @@ npm run local
 
 ### データの保存場所とバックアップ
 
-- データはすべて `data/invoice-manager.db`（SQLite）に保存されます。git には含まれません
-- バックアップは、アプリを終了してから `data/` フォルダごとコピーしてください（起動中は `-wal` などのファイルにも書き込み途中のデータがあるため）
+- データはすべて `data/invoice-manager.db`（SQLite）に保存されます。git には含まれません（`npm run local` は専用フォルダから起動しますが、データはこの場所を使います）
+- `npm run local` で起動するたびに、`data/backups/invoice-manager-{日時}.db` にバックアップを取ります。新しいものから **3 世代** だけ残し、古いものは自動で削除します
+- バックアップから戻すときは、アプリを終了してから、戻したいバックアップを `data/invoice-manager.db` に上書きコピーします（同じフォルダの `invoice-manager.db-wal` と `invoice-manager.db-shm` があれば削除してから）
+- 手元で別の場所にも保管したいときは、アプリを終了してから `data/` フォルダごとコピーしてください
 - 保存先を変えるときは環境変数 `DATABASE_PATH` で指定します（例: `DATABASE_PATH=~/Documents/invoice.db npm run local`）
 
 ## 開発
@@ -49,16 +59,16 @@ npm run local
 npm run dev    # 開発サーバー（http://localhost:3000）
 ```
 
-| コマンド               | 用途                                                 |
-| ---------------------- | ---------------------------------------------------- |
-| `npm run local`        | ビルドしてアプリを起動（このパソコンからのみ開ける） |
-| `npm run dev`          | 開発サーバー起動                                     |
-| `npm run lint`         | ESLint                                               |
-| `npm run format`       | Prettier で整形                                      |
-| `npm run format:check` | Prettier の差分検査                                  |
-| `npm test`             | テスト実行                                           |
-| `npm run db:generate`  | スキーマからマイグレーションを生成                   |
-| `npm run build`        | 本番ビルド                                           |
+| コマンド               | 用途                                                             |
+| ---------------------- | ---------------------------------------------------------------- |
+| `npm run local`        | 最新 main をバックアップ付きで起動（このパソコンからのみ開ける） |
+| `npm run dev`          | 開発サーバー起動                                                 |
+| `npm run lint`         | ESLint                                                           |
+| `npm run format`       | Prettier で整形                                                  |
+| `npm run format:check` | Prettier の差分検査                                              |
+| `npm test`             | テスト実行                                                       |
+| `npm run db:generate`  | スキーマからマイグレーションを生成                               |
+| `npm run build`        | 本番ビルド                                                       |
 
 PR を作ると GitHub Actions で `lint` / `format:check` / `test` / `build` が実行されます。
 
