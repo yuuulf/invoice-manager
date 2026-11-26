@@ -6,6 +6,7 @@ import {
   type PaymentTermType,
   type RoundingMode,
 } from "@/db/schema";
+import { getText as text, isOneOf } from "@/lib/form-data";
 
 export type ClientInput = {
   name: string;
@@ -26,18 +27,6 @@ export type ClientParseResult =
   | { ok: false; errors: ClientFormErrors; values: ClientFormValues };
 
 export const CLIENT_CODE_PATTERN = /^[A-Z0-9]{3}$/;
-
-function text(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function isOneOf<T extends string>(
-  options: readonly T[],
-  value: string,
-): value is T {
-  return (options as readonly string[]).includes(value);
-}
 
 /** 取引先フォームの入力値を検証する（spec.md 5） */
 export function parseClientForm(formData: FormData): ClientParseResult {
