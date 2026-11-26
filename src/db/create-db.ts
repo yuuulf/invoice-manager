@@ -17,3 +17,6 @@ export function createDb(filename: string) {
 }
 
 export type Db = ReturnType<typeof createDb>;
+
+/** トランザクション内でも使える DB 操作の型 */
+export type DbOrTx = Db | Parameters<Parameters<Db["transaction"]>[0]>[0];

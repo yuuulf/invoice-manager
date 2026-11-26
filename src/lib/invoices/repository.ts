@@ -1,5 +1,5 @@
 import { asc, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
-import type { Db } from "@/db/create-db";
+import type { Db, DbOrTx } from "@/db/create-db";
 import {
   clients,
   invoiceItems,
@@ -17,6 +17,7 @@ import {
   nextInvoiceNumber,
   type Period,
 } from "./calc";
+import { ledgerNumbersWithPrefix } from "@/lib/ledger/numbers";
 import type { InvoiceDraftInput, InvoiceFormErrors } from "./validation";
 
 export type InvoiceWithItems = Invoice & { items: InvoiceItem[] };
@@ -109,7 +110,10 @@ export function listInvoices(
   }));
 }
 
-export function getInvoice(db: Db, id: number): InvoiceWithItems | undefined {
+export function getInvoice(
+  db: DbOrTx,
+  id: number,
+): InvoiceWithItems | undefined {
   const invoice = db.select().from(invoices).where(eq(invoices.id, id)).get();
   if (!invoice) return undefined;
   const items = db
@@ -160,14 +164,17 @@ export function saveInvoice(
     }
     if (Object.keys(errors).length > 0) return { ok: false, errors };
 
+    // 採番は台帳の番号だけを見る。確定していない請求書の番号は連番に含めない（spec.md 7.2）
     let invoiceNumber: string | null = null;
     if (client && input.issueDate) {
       const prefix = invoiceNumberPrefix(client.code, input.issueDate);
-      invoiceNumber = current?.invoiceNumber?.startsWith(prefix)
-        ? current.invoiceNumber
-        : // 確定していない請求書の番号は連番に含めない（spec.md 7.2）。
-          // TODO(台帳): 台帳を実装したら台帳の請求番号を渡す
-          nextInvoiceNumber(prefix, []);
+      const taken = ledgerNumbersWithPrefix(tx, prefix);
+      const keep =
+        current?.invoiceNumber?.startsWith(prefix) &&
+        !taken.includes(current.invoiceNumber);
+      invoiceNumber = keep
+        ? current!.invoiceNumber
+        : nextInvoiceNumber(prefix, taken);
     }
 
     const period = periodOf(input);
