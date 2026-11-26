@@ -159,13 +159,54 @@ describe("請求番号の連番（spec.md 7.2）", () => {
 
     expect(confirmInvoice(db, b)).toEqual({
       ok: false,
-      renumbered: "IABC-202611-002",
+      renumbered: {
+        from: "IABC-202611-001",
+        to: "IABC-202611-002",
+        reason: "duplicate",
+      },
     });
     expect(getInvoice(db, b)?.invoiceNumber).toBe("IABC-202611-002");
     expect(listLedger(db)).toHaveLength(1);
 
     confirm(b);
     expect(listLedger(db)).toHaveLength(2);
+  });
+
+  test("台帳の番号が削除されて空いたら、小さい番号に振り直して確定を止める（空き）", () => {
+    const first = confirm(createInvoice());
+    const second = confirm(createInvoice());
+    const third = createInvoice();
+    expect(getInvoice(db, third)?.invoiceNumber).toBe("IABC-202611-003");
+    deleteLedgerEntry(db, second, "IABC-202611-002");
+
+    expect(confirmInvoice(db, third)).toEqual({
+      ok: false,
+      renumbered: {
+        from: "IABC-202611-003",
+        to: "IABC-202611-002",
+        reason: "gap",
+      },
+    });
+    expect(first).toBeGreaterThan(0);
+  });
+
+  test("台帳の番号より前の番号なら、台帳の連番に合わせて振り直す（それ以外）", () => {
+    const a = createInvoice();
+    const b = createInvoice();
+    const c = createInvoice(); // 3 件とも IABC-202611-001
+    const ledgerA = confirm(a);
+    confirmInvoice(db, b); // 002 に振り直される
+    confirm(b);
+    deleteLedgerEntry(db, ledgerA, "IABC-202611-001"); // 台帳は 002 だけ
+
+    expect(confirmInvoice(db, c)).toEqual({
+      ok: false,
+      renumbered: {
+        from: "IABC-202611-001",
+        to: "IABC-202611-003",
+        reason: "behind",
+      },
+    });
   });
 
   test("台帳に同じ番号があれば、保存時にも振り直す", () => {

@@ -16,6 +16,7 @@ import {
   type InvoiceFormErrors,
   type InvoiceFormValues,
 } from "@/lib/invoices/validation";
+import { renumberedMessage } from "@/lib/ledger/messages";
 import { confirmInvoice } from "@/lib/ledger/repository";
 
 export type InvoiceFormState = {
@@ -91,8 +92,8 @@ export async function confirmInvoiceAction(
     return {
       message:
         "renumbered" in confirmed
-          ? `請求番号が台帳と重複するため ${confirmed.renumbered} に振り直しました。プレビューを確認して、もう一度確定してください`
-          : "必須項目がそろっていないため確定できません。編集に戻って入力してください",
+          ? renumberedMessage(confirmed.renumbered)
+          : "必須項目がそろっていないため発行できません。編集に戻って入力してください",
     };
   }
   revalidatePath("/invoices", "layout");

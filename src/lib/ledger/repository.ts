@@ -57,7 +57,15 @@ export function prepareInvoiceOutput(db: Db, invoiceId: number) {
 export type ConfirmResult =
   | { ok: true; ledgerId: number }
   | { ok: false; errors: InvoiceFormErrors }
-  | { ok: false; renumbered: string };
+  | { ok: false; renumbered: Renumbered };
+
+/** 確定時に請求番号を振り直した内容（spec.md 7.2） */
+export type Renumbered = {
+  from: string;
+  to: string;
+  /** duplicate: すでに台帳にある / gap: 台帳の番号に空きがある / behind: 台帳の番号より前 */
+  reason: "duplicate" | "gap" | "behind";
+};
 
 /**
  * 請求書を確定して台帳に記録し、元の請求書を一覧から消す（spec.md 7.4）。
@@ -73,16 +81,23 @@ export function confirmInvoice(db: Db, invoiceId: number): ConfirmResult {
       snapshot.client.code,
       snapshot.issueDate,
     );
-    const expected = nextInvoiceNumber(
-      prefix,
-      ledgerNumbersWithPrefix(tx, prefix),
-    );
-    if (snapshot.invoiceNumber !== expected) {
+    const taken = ledgerNumbersWithPrefix(tx, prefix);
+    const expected = nextInvoiceNumber(prefix, taken);
+    const current = snapshot.invoiceNumber;
+    if (current !== expected) {
       tx.update(invoices)
         .set({ invoiceNumber: expected, updatedAt: new Date() })
         .where(eq(invoices.id, invoiceId))
         .run();
-      return { ok: false, renumbered: expected };
+      const reason = taken.includes(current)
+        ? "duplicate"
+        : current > expected
+          ? "gap"
+          : "behind";
+      return {
+        ok: false,
+        renumbered: { from: current, to: expected, reason },
+      };
     }
 
     const { id } = tx
