@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
+import type { RowActionResult } from "@/lib/action-result";
 import {
   archiveOwner,
   createOwner,
@@ -51,9 +52,12 @@ export async function updateOwnerAction(
   redirect("/owners");
 }
 
-export async function archiveOwnerAction(formData: FormData) {
-  archiveOwner(getDb(), idFrom(formData));
+export async function archiveOwnerAction(
+  formData: FormData,
+): Promise<RowActionResult> {
+  const result = archiveOwner(getDb(), idFrom(formData));
   revalidatePath("/owners");
+  return result;
 }
 
 export async function restoreOwnerAction(formData: FormData) {
@@ -61,7 +65,10 @@ export async function restoreOwnerAction(formData: FormData) {
   revalidatePath("/owners");
 }
 
-export async function deleteOwnerAction(formData: FormData) {
-  deleteOwner(getDb(), idFrom(formData));
+export async function deleteOwnerAction(
+  formData: FormData,
+): Promise<RowActionResult> {
+  const result = deleteOwner(getDb(), idFrom(formData));
   revalidatePath("/owners");
+  return result;
 }

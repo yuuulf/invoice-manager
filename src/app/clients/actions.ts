@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
+import type { RowActionResult } from "@/lib/action-result";
 import {
   archiveClient,
   createClient,
@@ -57,9 +58,12 @@ export async function updateClientAction(
   redirect("/clients");
 }
 
-export async function archiveClientAction(formData: FormData) {
-  archiveClient(getDb(), idFrom(formData));
+export async function archiveClientAction(
+  formData: FormData,
+): Promise<RowActionResult> {
+  const result = archiveClient(getDb(), idFrom(formData));
   revalidatePath("/clients");
+  return result;
 }
 
 export async function restoreClientAction(formData: FormData) {
@@ -67,7 +71,10 @@ export async function restoreClientAction(formData: FormData) {
   revalidatePath("/clients");
 }
 
-export async function deleteClientAction(formData: FormData) {
-  deleteClient(getDb(), idFrom(formData));
+export async function deleteClientAction(
+  formData: FormData,
+): Promise<RowActionResult> {
+  const result = deleteClient(getDb(), idFrom(formData));
   revalidatePath("/clients");
+  return result;
 }

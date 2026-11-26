@@ -14,6 +14,9 @@ type RadioGroupProps = {
   name: string;
   options: readonly RadioOption[];
   defaultValue?: string;
+  /** 指定すると選択状態を親が管理する（onValueChange と組み合わせる） */
+  value?: string;
+  onValueChange?: (value: string) => void;
   required?: boolean;
   error?: string;
   hint?: string;
@@ -24,6 +27,8 @@ export function RadioGroup({
   name,
   options,
   defaultValue,
+  value,
+  onValueChange,
   required,
   error,
   hint,
@@ -48,7 +53,10 @@ export function RadioGroup({
                 type="radio"
                 name={name}
                 value={option.value}
-                defaultChecked={option.value === defaultValue}
+                {...(value === undefined
+                  ? { defaultChecked: option.value === defaultValue }
+                  : { checked: option.value === value })}
+                onChange={() => onValueChange?.(option.value)}
                 required={required}
               />
               {option.label}

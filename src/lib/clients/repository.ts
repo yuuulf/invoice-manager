@@ -1,5 +1,7 @@
 import { and, asc, eq, isNotNull, isNull, ne } from "drizzle-orm";
 import type { Db } from "@/db/create-db";
+import type { RowActionResult } from "@/lib/action-result";
+import { isClientInUse } from "@/lib/invoices/repository";
 import { clients, type Client } from "@/db/schema";
 import type { ClientFormErrors, ClientInput } from "./validation";
 
@@ -64,7 +66,13 @@ export function updateClient(
   return { ok: true };
 }
 
-export function archiveClient(db: Db, id: number) {
+/** 請求書で使っている取引先はアーカイブできない（spec.md 4.1） */
+export function archiveClient(db: Db, id: number): RowActionResult {
+  if (isClientInUse(db, id)) {
+    return {
+      error: "この取引先は請求書で使われているため、アーカイブできません",
+    };
+  }
   db.update(clients)
     .set({ archivedAt: new Date() })
     .where(eq(clients.id, id))
@@ -75,6 +83,10 @@ export function restoreClient(db: Db, id: number) {
   db.update(clients).set({ archivedAt: null }).where(eq(clients.id, id)).run();
 }
 
-export function deleteClient(db: Db, id: number) {
+/** 請求書で使っている取引先は削除できない（spec.md 4.1） */
+export function deleteClient(db: Db, id: number): RowActionResult {
+  if (isClientInUse(db, id)) {
+    return { error: "この取引先は請求書で使われているため、削除できません" };
+  }
   db.delete(clients).where(eq(clients.id, id)).run();
 }

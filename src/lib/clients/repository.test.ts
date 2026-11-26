@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import type { Db } from "@/db/create-db";
 import { createTestDb } from "@/db/test-utils";
+import { saveInvoice } from "@/lib/invoices/repository";
+import { emptyDraft } from "@/lib/invoices/test-fixtures";
 import {
   archiveClient,
   createClient,
@@ -116,5 +118,21 @@ describe("アーカイブ・削除", () => {
     const id = idOf("ABC");
     deleteClient(db, id);
     expect(getClient(db, id)).toBeUndefined();
+  });
+});
+
+describe("請求書で使っている取引先（spec.md 4.1）", () => {
+  test("アーカイブも削除もできない", () => {
+    createClient(db, input());
+    const id = idOf("ABC");
+    saveInvoice(db, undefined, emptyDraft({ clientId: id }));
+
+    expect(archiveClient(db, id)).toEqual({
+      error: "この取引先は請求書で使われているため、アーカイブできません",
+    });
+    expect(deleteClient(db, id)).toEqual({
+      error: "この取引先は請求書で使われているため、削除できません",
+    });
+    expect(getClient(db, id)).toMatchObject({ archivedAt: null });
   });
 });
