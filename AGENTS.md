@@ -50,6 +50,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Server Components を基本とし、状態やイベントが必要な箇所だけ `"use client"` にする
 - データ更新は Server Actions / Route Handlers を使う。SQLite へのアクセスはサーバー側コードに閉じ、クライアントへ持ち込まない
 - `cacheComponents` が有効なため、リクエスト時のデータ（`searchParams`・`params`・DB クエリ）を読むコンポーネントは `<Suspense>` で囲む。`usePathname()` も動的ルートでは Suspense が必要（サイドバーはフォールバック付きで囲み済み）
+- `cacheComponents` では前に開いた画面が入力状態ごと残る（React の `<Activity>`）。編集フォームはデータの更新日時（`updatedAt`）を `key` にし、作成フォームなど開くたびにまっさらにしたいものは `ResetOnNavigation` で囲む
+- Server Action でデータを変えたら `revalidatePath("/{一覧のパス}", "layout")` で配下の画面をまとめて再検証する
 - フォーマットと静的解析のルールは Prettier / ESLint の設定で機械的に強制する。設定で表現できるルールは AGENTS.md に書かず設定ファイルに書く
 - ルールを無効化するコメント（`eslint-disable` 等）は理由をコメントで添え、最小範囲にとどめる
 
