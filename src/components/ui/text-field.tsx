@@ -1,6 +1,5 @@
-import { useId, type ComponentProps } from "react";
-import { FieldError } from "./field-error";
-import { RequiredMark } from "./required-mark";
+import type { ComponentProps } from "react";
+import { controlClassName, Field } from "./field";
 
 type TextFieldProps = Omit<ComponentProps<"input">, "id"> & {
   label: string;
@@ -16,32 +15,15 @@ export function TextField({
   className = "",
   ...props
 }: TextFieldProps) {
-  const id = useId();
-  const errorId = `${id}-error`;
-  const hintId = `${id}-hint`;
-  const describedBy =
-    [hint && hintId, error && errorId].filter(Boolean).join(" ") || undefined;
-
   return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-bold">
-        {label}
-        {required && <RequiredMark />}
-      </label>
-      <input
-        id={id}
-        required={required}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
-        className={`mt-1 block w-full rounded border px-3 py-2 ${error ? "border-red-600" : "border-zinc-300"} ${className}`}
-        {...props}
-      />
-      {hint && (
-        <p id={hintId} className="mt-1 text-sm text-zinc-500">
-          {hint}
-        </p>
+    <Field label={label} required={required} hint={hint} error={error}>
+      {(control) => (
+        <input
+          {...control}
+          className={controlClassName(error, className)}
+          {...props}
+        />
       )}
-      <FieldError id={errorId} message={error} />
-    </div>
+    </Field>
   );
 }
