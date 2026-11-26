@@ -127,3 +127,13 @@ export function nextInvoiceNumber(
   const next = serials.length === 0 ? 1 : Math.max(...serials) + 1;
   return `${prefix}${pad(next, 3)}`;
 }
+
+/** 金額を 3 桁区切りで表示する（spec.md 8.3 FMT-4） */
+export function formatAmount(amount: number): string {
+  return amount.toLocaleString("ja-JP");
+}
+
+/** 日付を "YYYY-MM-DD"（ローカル時刻）にする */
+export function toDateString(date: Date): string {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}

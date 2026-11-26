@@ -3,6 +3,7 @@ import {
   basisMonthOf,
   calcAmount,
   calcDueDate,
+  formatAmount,
   formatQuantity,
   invoiceNumberPrefix,
   isValidDate,
@@ -10,6 +11,7 @@ import {
   nextInvoiceNumber,
   parseQuantity,
   parseUnitPrice,
+  toDateString,
 } from "./calc";
 
 describe("数量・単価", () => {
@@ -156,4 +158,15 @@ describe("請求番号（spec.md 7.2）", () => {
       nextInvoiceNumber("IABC-202611-", ["IABC-202611-001", "IABC-202611-003"]),
     ).toBe("IABC-202611-004");
   });
+});
+
+test("formatAmount は 3 桁区切り", () => {
+  expect(formatAmount(134000)).toBe("134,000");
+  expect(formatAmount(999)).toBe("999");
+  expect(formatAmount(0)).toBe("0");
+});
+
+test("toDateString はローカル時刻の日付", () => {
+  expect(toDateString(new Date(2026, 10, 30, 23, 59))).toBe("2026-11-30");
+  expect(toDateString(new Date(2027, 0, 5))).toBe("2027-01-05");
 });
