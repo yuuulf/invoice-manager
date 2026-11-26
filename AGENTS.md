@@ -24,17 +24,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## コマンド
 
-| コマンド               | 用途                                     |
-| ---------------------- | ---------------------------------------- |
-| `npm run local`        | ビルドしてアプリを起動（127.0.0.1 のみ） |
-| `npm run dev`          | 開発サーバー起動                         |
-| `npm run lint`         | ESLint（警告が1件でもあれば失敗）        |
-| `npm run format`       | Prettier で整形                          |
-| `npm run format:check` | Prettier の差分検査                      |
-| `npm test`             | Vitest でテスト実行                      |
-| `npm run test:watch`   | Vitest を監視モードで実行                |
-| `npm run db:generate`  | スキーマからマイグレーションを生成       |
-| `npm run build`        | 本番ビルド                               |
+| コマンド               | 用途                                                                       |
+| ---------------------- | -------------------------------------------------------------------------- |
+| `npm run local`        | 最新 main を `.local-run/` で起動（DB バックアップ 3 世代、ポート 3110〜） |
+| `npm run dev`          | 開発サーバー起動                                                           |
+| `npm run lint`         | ESLint（警告が1件でもあれば失敗）                                          |
+| `npm run format`       | Prettier で整形                                                            |
+| `npm run format:check` | Prettier の差分検査                                                        |
+| `npm test`             | Vitest でテスト実行                                                        |
+| `npm run test:watch`   | Vitest を監視モードで実行                                                  |
+| `npm run db:generate`  | スキーマからマイグレーションを生成                                         |
+| `npm run build`        | 本番ビルド                                                                 |
 
 ## ディレクトリ構成・コーディング規約
 
@@ -44,6 +44,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - `src/components/`: 複数画面で使う UI。汎用部品（ボタン・入力欄・ラジオボタン・見出し等）は `src/components/ui/`
   - `src/db/`: DB 接続（`index.ts` の `getDb()`）とテーブル定義（`schema.ts`）
   - `src/lib/pdf/`: 請求書 PDF の生成（pdfkit）。文言の組み立て（`invoice-text.ts`）と描画（`render-invoice.ts`）を分け、文言はテストで spec.md 8 章と突き合わせる
+  - `scripts/`: `npm run local` などの補助スクリプト（Node.js の `.mjs`）。`.local-run/` は `npm run local` が最新 main を取り出す専用フォルダで、lint・テスト・型チェックの対象外
   - `assets/fonts/`: PDF 用の日本語フォント（Noto Sans JP、OFL）。外部から取得しない
   - `src/lib/<機能>/`: 画面に依存しない処理。入力チェック（`validation.ts`）、DB 操作（`repository.ts`。`db` を引数で受け取りテストではインメモリ DB を渡す）、選択肢の表示名（`labels.ts`）など
   - Server Actions は各ルートの `actions.ts` に置き、入力チェックと DB 操作は `src/lib/` を呼ぶだけにする
