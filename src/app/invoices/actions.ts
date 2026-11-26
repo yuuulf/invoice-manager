@@ -23,8 +23,6 @@ export type InvoiceFormState = {
   values: InvoiceFormValues;
   /** フォーム全体に出すメッセージ */
   message?: string;
-  /** 保存後の請求番号（振り直したときに表示を更新する） */
-  invoiceNumber?: string | null;
 } | null;
 
 function idFrom(formData: FormData) {
@@ -35,7 +33,7 @@ function idFrom(formData: FormData) {
 
 /**
  * 保存（intent=save）または PDF 出力（intent=output）。
- * 出力は必須項目がそろっているときだけ保存してから行い、確定にチェックがあれば台帳に記録する（spec.md 7.4）。
+ * 出力は必須項目がそろっているときだけ保存して、プレビュー画面を開く（spec.md 7.4）。
  */
 async function submit(
   id: number | undefined,
@@ -56,35 +54,10 @@ async function submit(
     }
   }
 
-  const db = getDb();
-  const saved = saveInvoice(db, id, parsed.data);
+  const saved = saveInvoice(getDb(), id, parsed.data);
   if (!saved.ok) return { errors: saved.errors, values: parsed.values };
   revalidatePath("/invoices");
-  if (!output) redirect("/invoices");
-
-  // 出力後は移動先の画面でダウンロードを始める（AutoDownload）
-  if (formData.get("confirm") !== "on") {
-    redirect(`/invoices/${saved.id}/edit?download=1`);
-  }
-
-  const confirmed = confirmInvoice(db, saved.id);
-  if (!confirmed.ok) {
-    return "renumbered" in confirmed
-      ? {
-          errors: {},
-          values: parsed.values,
-          invoiceNumber: confirmed.renumbered,
-          message: `請求番号が台帳と重複するため ${confirmed.renumbered} に振り直しました。内容を確認して、もう一度確定してください`,
-        }
-      : {
-          errors: confirmed.errors,
-          values: parsed.values,
-          message: "PDFを出力するには、必須項目をすべて入力してください",
-        };
-  }
-  // 元の請求書は消えるため、台帳の画面に移ってからダウンロードする
-  revalidatePath("/ledger");
-  redirect(`/ledger?download=${confirmed.ledgerId}`);
+  redirect(output ? `/invoices/${saved.id}/preview` : "/invoices");
 }
 
 export async function createInvoiceAction(
@@ -99,6 +72,33 @@ export async function updateInvoiceAction(
   formData: FormData,
 ): Promise<InvoiceFormState> {
   return submit(idFrom(formData), formData);
+}
+
+export type ConfirmState = { message: string } | null;
+
+/**
+ * プレビュー画面の「確定してダウンロード」。台帳に記録して台帳画面に移り、確定した PDF をダウンロードする。
+ * 請求番号を振り直した場合や必須項目が足りない場合は、確定せずにメッセージを返す（spec.md 7.2, 7.4）。
+ */
+export async function confirmInvoiceAction(
+  _prev: ConfirmState,
+  formData: FormData,
+): Promise<ConfirmState> {
+  const id = idFrom(formData);
+  const confirmed = confirmInvoice(getDb(), id);
+  if (!confirmed.ok) {
+    revalidatePath(`/invoices/${id}/preview`);
+    return {
+      message:
+        "renumbered" in confirmed
+          ? `請求番号が台帳と重複するため ${confirmed.renumbered} に振り直しました。プレビューを確認して、もう一度確定してください`
+          : "必須項目がそろっていないため確定できません。編集に戻って入力してください",
+    };
+  }
+  revalidatePath("/invoices");
+  revalidatePath("/ledger");
+  // 元の請求書は消えるため、台帳の画面に移ってからダウンロードする
+  redirect(`/ledger?download=${confirmed.ledgerId}`);
 }
 
 export async function archiveInvoiceAction(

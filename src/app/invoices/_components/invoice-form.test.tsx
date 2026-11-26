@@ -323,25 +323,17 @@ test("編集では保存済みの内容と請求番号を表示する", () => {
   expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
 });
 
-describe("PDF 出力と確定（spec.md 7.4）", () => {
-  test("確定のチェックで説明とボタンの文言が変わる", async () => {
-    renderNew();
-    expect(
-      screen.getByText(/「SAMPLE」の透かしが入ります/),
-    ).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("checkbox", { name: "確定する" }));
-    expect(screen.getByText(/台帳に記録され/)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "確定してPDF出力" }),
-    ).toBeInTheDocument();
-  });
-
-  test("PDF出力は intent=output で送信する", async () => {
+describe("PDF 出力（spec.md 7.4）", () => {
+  test("PDF出力は intent=output で送信する。確定はプレビュー画面で行う", async () => {
     const action = renderNew();
+    expect(
+      screen.queryByRole("checkbox", { name: /確定/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/ダウンロードと確定はプレビュー画面で行います/),
+    ).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "PDF出力" }));
-    const formData: FormData = action.mock.calls[0][1];
-    expect(formData.get("intent")).toBe("output");
-    expect(formData.get("confirm")).toBeNull();
+    expect(action.mock.calls[0][1].get("intent")).toBe("output");
   });
 
   test("保存ボタンでは intent を送らない", async () => {
@@ -350,27 +342,10 @@ describe("PDF 出力と確定（spec.md 7.4）", () => {
     expect(action.mock.calls[0][1].get("intent")).toBeNull();
   });
 
-  test("確定して出力するときは確認し、キャンセルなら送信しない", async () => {
-    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false);
-    const action = renderNew();
-    await userEvent.click(screen.getByRole("checkbox", { name: "確定する" }));
-    await userEvent.click(
-      screen.getByRole("button", { name: "確定してPDF出力" }),
-    );
-    expect(confirm).toHaveBeenCalled();
-    expect(action).not.toHaveBeenCalled();
-
-    confirm.mockReturnValueOnce(true);
-    await userEvent.click(
-      screen.getByRole("button", { name: "確定してPDF出力" }),
-    );
-    expect(action.mock.calls[0][1].get("confirm")).toBe("on");
-  });
-
-  test("出力できなかったらメッセージと、振り直した請求番号を表示する", async () => {
+  test("出力できなかったらメッセージを表示する", async () => {
     renderNew(
       vi.fn(async (_state: unknown, formData: FormData) => ({
-        errors: {},
+        errors: { subject: "件名を入力してください" },
         values: {
           clientId: "",
           ownerId: "",
@@ -390,15 +365,15 @@ describe("PDF 出力と確定（spec.md 7.4）", () => {
             unitPrice: "",
           })),
         },
-        invoiceNumber: "IABC-202611-002",
-        message:
-          "請求番号が台帳と重複するため IABC-202611-002 に振り直しました",
+        message: "PDFを出力するには、必須項目をすべて入力してください",
       })),
     );
     await userEvent.click(screen.getByRole("button", { name: "PDF出力" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "振り直しました",
+      "PDFを出力するには、必須項目をすべて入力してください",
     );
-    expect(screen.getByText("IABC-202611-002")).toBeInTheDocument();
+    expect(
+      screen.getByRole("textbox", { name: /件名/ }),
+    ).toHaveAccessibleDescription("件名を入力してください");
   });
 });

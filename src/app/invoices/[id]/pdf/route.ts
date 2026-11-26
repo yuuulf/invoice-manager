@@ -5,9 +5,9 @@ import { renderInvoicePdf } from "@/lib/pdf/render-invoice";
 import { pdfResponse } from "@/lib/pdf/response";
 import { getInvoice } from "@/lib/invoices/repository";
 
-/** 確定前の PDF（SAMPLE の透かし入り。spec.md 7.4） */
+/** 確定前の PDF（SAMPLE の透かし入り。spec.md 7.4）。?inline=1 でプレビュー表示用 */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: RouteContext<"/invoices/[id]/pdf">,
 ) {
   const { id } = await params;
@@ -26,5 +26,7 @@ export async function GET(
     sample: true,
     seal: output.seal,
   });
-  return pdfResponse(pdf, output.snapshot.invoiceNumber);
+  return pdfResponse(pdf, output.snapshot.invoiceNumber, {
+    inline: new URL(request.url).searchParams.get("inline") === "1",
+  });
 }

@@ -155,11 +155,7 @@ export function InvoiceForm({
         key={JSON.stringify(state)}
         initial={values}
         errors={state?.errors ?? {}}
-        invoiceNumber={
-          state?.invoiceNumber !== undefined
-            ? state.invoiceNumber
-            : (invoice?.invoiceNumber ?? null)
-        }
+        invoiceNumber={invoice?.invoiceNumber ?? null}
         clients={clients}
         owners={owners}
       />
@@ -169,47 +165,22 @@ export function InvoiceForm({
   );
 }
 
-/** PDF 出力と確定（spec.md 7.4） */
+/** PDF 出力。保存してプレビュー画面を開き、確定はそこで行う（spec.md 7.4） */
 function OutputSection({ pending }: { pending: boolean }) {
-  const [confirm, setConfirm] = useState(false);
   return (
     <FormSection title="出力">
-      <div className="space-y-3">
-        <label className="flex items-center gap-2 font-bold">
-          <input
-            type="checkbox"
-            name="confirm"
-            checked={confirm}
-            onChange={(e) => setConfirm(e.target.checked)}
-          />
-          確定する
-        </label>
-        <p className="text-sm text-zinc-500">
-          {confirm
-            ? "確定すると台帳に記録され、この請求書は変更できなくなります（台帳から削除・コピーは可能）。"
-            : "確定せずに出力すると、PDFに「SAMPLE」の透かしが入ります。台帳には記録しません。"}
-        </p>
+      <div className="space-y-2">
         <Button
           type="submit"
           name="intent"
           value="output"
           variant="secondary"
           disabled={pending}
-          onClick={(event) => {
-            if (
-              confirm &&
-              !window.confirm(
-                "確定すると台帳に記録され、この請求書は変更できなくなります。確定してPDFを出力しますか？",
-              )
-            ) {
-              event.preventDefault();
-            }
-          }}
         >
-          {confirm ? "確定してPDF出力" : "PDF出力"}
+          PDF出力
         </Button>
         <p className="text-sm text-zinc-500">
-          出力する前に、入力内容を保存します。
+          入力内容を保存して、PDFのプレビューを表示します。ダウンロードと確定はプレビュー画面で行います。
         </p>
       </div>
     </FormSection>

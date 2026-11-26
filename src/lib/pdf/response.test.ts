@@ -20,3 +20,10 @@ test("PDF をダウンロードさせ、日本語のファイル名を UTF-8 で
   );
   expect(await response.text()).toBe("%PDF-");
 });
+
+test("inline なら画面内に表示させる", () => {
+  const response = pdfResponse(Buffer.from("%PDF-"), "IABC-202611-001", {
+    inline: true,
+  });
+  expect(response.headers.get("Content-Disposition")).toMatch(/^inline; /);
+});
