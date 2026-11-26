@@ -67,6 +67,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - 一覧の各行の右端: 編集アイコンボタン、その右に縦三点リーダーのアイコンボタン（`ActionMenu`）。メニューには「アーカイブ」「削除」を入れる。アーカイブ・削除がある一覧は `RowActions` を使う
   - アーカイブ一覧の各行: 編集アイコンは出さず、縦三点リーダーのメニューに「アーカイブを解除」「削除」を入れる
   - 元に戻せない操作（削除など）は `ActionMenuItem` の `confirmMessage` で確認してから実行する
+  - 行の操作が失敗したとき（使用中で削除できない等）は、Server Action が `RowActionResult`（`{ error }`）を返し、`RowActions` がメッセージを表示する
+- 入力欄は `TextField` / `SelectField` / `TextAreaField` / `RadioGroup` を使う（ラベル・注釈・エラーの関連付けは `Field` が行う）
 - 項目が多いフォームは `FormSection` でまとまり（例: 基本情報、振込先）に分ける
 - 作成・編集フォームの下部は `FormActions` を使う。入力欄の右端に揃え、左から「キャンセル」「作成」（作成画面）／「保存」（編集画面）の順に並べる。「新規作成」「新規登録」とは書かない
 - 入力エラーは項目の下に表示し、入力欄に `aria-invalid` と `aria-describedby` で関連付ける（`TextField`・`RadioGroup` が対応済み）
