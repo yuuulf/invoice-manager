@@ -1,10 +1,11 @@
-import { render, screen } from "@testing-library/react";
-import { expect, test } from "vitest";
-import Page from "./page";
+import { expect, test, vi } from "vitest";
+import Home from "./page";
 
-test("トップページにアプリ名の見出しが表示される", () => {
-  render(<Page />);
-  expect(
-    screen.getByRole("heading", { level: 1, name: "請求書管理" }),
-  ).toBeInTheDocument();
+const redirect = vi.hoisted(() => vi.fn());
+
+vi.mock("next/navigation", () => ({ redirect }));
+
+test("トップページは請求書一覧へリダイレクトする", () => {
+  Home();
+  expect(redirect).toHaveBeenCalledWith("/invoices");
 });
