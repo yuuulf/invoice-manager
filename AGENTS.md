@@ -42,6 +42,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - `src/app/`: ルーティング（ページ・レイアウト）。特定のルートでしか使わないものは、そのルート配下の `_components/` などに置く
   - `src/components/`: 複数画面で使う UI。汎用部品（ボタン・入力欄・ラジオボタン・見出し等）は `src/components/ui/`
   - `src/db/`: DB 接続（`index.ts` の `getDb()`）とテーブル定義（`schema.ts`）
+  - `src/lib/pdf/`: 請求書 PDF の生成（pdfkit）。文言の組み立て（`invoice-text.ts`）と描画（`render-invoice.ts`）を分け、文言はテストで spec.md 8 章と突き合わせる
+  - `assets/fonts/`: PDF 用の日本語フォント（Noto Sans JP、OFL）。外部から取得しない
   - `src/lib/<機能>/`: 画面に依存しない処理。入力チェック（`validation.ts`）、DB 操作（`repository.ts`。`db` を引数で受け取りテストではインメモリ DB を渡す）、選択肢の表示名（`labels.ts`）など
   - Server Actions は各ルートの `actions.ts` に置き、入力チェックと DB 操作は `src/lib/` を呼ぶだけにする
 - 外部通信をしない（spec.md PRE-1）。`next/font/google` や CDN など、実行時・ビルド時に外部へ取りに行くものを使わない
@@ -70,6 +72,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - 行の操作が失敗したとき（使用中で削除できない等）は、Server Action が `RowActionResult`（`{ error }`）を返し、`RowActions` がメッセージを表示する
 - 入力欄は `TextField` / `SelectField` / `TextAreaField` / `RadioGroup` を使う（ラベル・注釈・エラーの関連付けは `Field` が行う）
 - 項目が多いフォームは `FormSection` でまとまり（例: 基本情報、振込先）に分ける
+- フォーム全体に関わるエラー（例: 必須項目が足りず出力できない）は `FormMessage` で先頭に表示する
+- 取り消せない重要な操作（台帳の削除など）は `TypedConfirmDialog` で決められた文字列（請求番号など）を入力させてから実行する
+- ファイルを出力したら、Server Action から `?download=...` 付きの画面へリダイレクトし、その画面で `AutoDownload` を表示してダウンロードを始める（自動ダウンロードがブロックされたとき用のリンクも出る）
 - 作成・編集フォームの下部は `FormActions` を使う。入力欄の右端に揃え、左から「キャンセル」「作成」（作成画面）／「保存」（編集画面）の順に並べる。「新規作成」「新規登録」とは書かない
 - 入力エラーは項目の下に表示し、入力欄に `aria-invalid` と `aria-describedby` で関連付ける（`TextField`・`RadioGroup` が対応済み）
 - 画面の文言は日本語で統一する。同じ概念には同じ用語を使う（例: 「取引先」「事業主」「請求書」「台帳」「確定」「アーカイブ」「作成」「保存」）。用語は `spec.md` に合わせ、新しい用語が必要なら spec.md に追記する
