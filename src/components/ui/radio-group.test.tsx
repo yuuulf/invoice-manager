@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { expect, test } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { expect, test, vi } from "vitest";
 import { RadioGroup } from "./radio-group";
 
 const options = [
@@ -35,4 +36,20 @@ test("エラーと注釈をグループに関連付けて表示する", () => {
   expect(
     screen.getByRole("group", { name: "端数処理" }),
   ).toHaveAccessibleDescription("補足 端数処理を選択してください");
+});
+
+test("value を渡すと選択状態を親が管理し、選ぶと onValueChange が呼ばれる", async () => {
+  const onValueChange = vi.fn();
+  render(
+    <RadioGroup
+      legend="端数処理"
+      name="rounding"
+      options={options}
+      value="round"
+      onValueChange={onValueChange}
+    />,
+  );
+  expect(screen.getByRole("radio", { name: "四捨五入" })).toBeChecked();
+  await userEvent.click(screen.getByRole("radio", { name: "切り上げ" }));
+  expect(onValueChange).toHaveBeenCalledWith("ceil");
 });
