@@ -19,7 +19,7 @@ function idFrom(formData: FormData) {
 /** 台帳から請求書画面にコピーし、その請求書の編集画面を開く（spec.md 7.4） */
 export async function copyLedgerAction(formData: FormData): Promise<void> {
   const invoiceId = copyLedgerToInvoice(getDb(), idFrom(formData));
-  revalidatePath("/invoices");
+  revalidatePath("/invoices", "layout");
   redirect(`/invoices/${invoiceId}/edit`);
 }
 
@@ -32,6 +32,6 @@ export async function deleteLedgerAction(
     idFrom(formData),
     getText(formData, "confirmation"),
   );
-  revalidatePath("/ledger");
+  revalidatePath("/ledger", "layout");
   return result;
 }

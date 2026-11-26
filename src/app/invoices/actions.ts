@@ -56,7 +56,7 @@ async function submit(
 
   const saved = saveInvoice(getDb(), id, parsed.data);
   if (!saved.ok) return { errors: saved.errors, values: parsed.values };
-  revalidatePath("/invoices");
+  revalidatePath("/invoices", "layout");
   redirect(output ? `/invoices/${saved.id}/preview` : "/invoices");
 }
 
@@ -95,8 +95,8 @@ export async function confirmInvoiceAction(
           : "必須項目がそろっていないため確定できません。編集に戻って入力してください",
     };
   }
-  revalidatePath("/invoices");
-  revalidatePath("/ledger");
+  revalidatePath("/invoices", "layout");
+  revalidatePath("/ledger", "layout");
   // 元の請求書は消えるため、台帳の画面に移ってからダウンロードする
   redirect(`/ledger?download=${confirmed.ledgerId}`);
 }
@@ -105,7 +105,7 @@ export async function archiveInvoiceAction(
   formData: FormData,
 ): Promise<RowActionResult> {
   archiveInvoice(getDb(), idFrom(formData));
-  revalidatePath("/invoices");
+  revalidatePath("/invoices", "layout");
   return undefined;
 }
 
@@ -113,7 +113,7 @@ export async function restoreInvoiceAction(
   formData: FormData,
 ): Promise<RowActionResult> {
   restoreInvoice(getDb(), idFrom(formData));
-  revalidatePath("/invoices");
+  revalidatePath("/invoices", "layout");
   return undefined;
 }
 
@@ -121,6 +121,6 @@ export async function deleteInvoiceAction(
   formData: FormData,
 ): Promise<RowActionResult> {
   deleteInvoice(getDb(), idFrom(formData));
-  revalidatePath("/invoices");
+  revalidatePath("/invoices", "layout");
   return undefined;
 }
