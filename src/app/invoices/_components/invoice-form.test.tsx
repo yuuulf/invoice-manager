@@ -149,16 +149,31 @@ describe("明細の金額と合計", () => {
       "8000",
     );
     expect(screen.getByLabelText("合計")).toHaveTextContent("—");
+    expect(
+      screen.getByText(
+        "取引先を選択すると金額と合計を計算します。最大10行です。",
+      ),
+    ).toBeInTheDocument();
 
     const clientSelect = screen.getByRole("combobox", { name: /取引先/ });
     await userEvent.selectOptions(clientSelect, "1"); // 切り捨て
     expect(screen.getByLabelText("1行目の金額")).toHaveTextContent("416");
     expect(screen.getByLabelText("2行目の金額")).toHaveTextContent("24,000");
     expect(screen.getByLabelText("合計")).toHaveTextContent("24,416");
+    expect(
+      screen.getByText(
+        "金額は数量×単価を取引先の端数処理（切り捨て）で計算します。最大10行です。",
+      ),
+    ).toBeInTheDocument();
 
     await userEvent.selectOptions(clientSelect, "2"); // 切り上げ
     expect(screen.getByLabelText("1行目の金額")).toHaveTextContent("417");
     expect(screen.getByLabelText("合計")).toHaveTextContent("24,417");
+    expect(
+      screen.getByText(
+        "金額は数量×単価を取引先の端数処理（切り上げ）で計算します。最大10行です。",
+      ),
+    ).toBeInTheDocument();
   });
 });
 

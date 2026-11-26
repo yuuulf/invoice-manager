@@ -22,6 +22,7 @@ import {
   parseUnitPrice,
   type Period,
 } from "@/lib/invoices/calc";
+import { roundingLabels } from "@/lib/clients/labels";
 import type { InvoiceWithItems } from "@/lib/invoices/repository";
 import {
   itemFieldName,
@@ -358,7 +359,7 @@ function InvoiceFields({
           total={total}
           errors={errors}
           onChange={updateItem}
-          hasClient={client !== undefined}
+          rounding={client?.rounding}
         />
       </FormSection>
 
@@ -384,7 +385,7 @@ function ItemsTable({
   total,
   errors,
   onChange,
-  hasClient,
+  rounding,
 }: {
   items: ItemFormValues[];
   amounts: (number | null)[];
@@ -395,7 +396,8 @@ function ItemsTable({
     key: keyof ItemFormValues,
     value: string,
   ) => void;
-  hasClient: boolean;
+  /** 選択中の取引先の端数処理。未選択なら undefined */
+  rounding: ClientOption["rounding"] | undefined;
 }) {
   const input = (
     position: number,
@@ -483,8 +485,8 @@ function ItemsTable({
         </tfoot>
       </table>
       <p className="mt-2 text-sm text-zinc-500">
-        {hasClient
-          ? "金額は数量×単価を取引先の端数処理で計算します。最大10行です。"
+        {rounding
+          ? `金額は数量×単価を取引先の端数処理（${roundingLabels[rounding]}）で計算します。最大10行です。`
           : "取引先を選択すると金額と合計を計算します。最大10行です。"}
       </p>
     </div>
