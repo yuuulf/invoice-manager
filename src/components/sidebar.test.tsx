@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
-import { Sidebar } from "./sidebar";
+import { Sidebar, SidebarNav } from "./sidebar";
 
 const pathname = vi.hoisted(() => ({ current: "/" }));
 
@@ -45,4 +45,11 @@ test("配下のページでも親メニューが現在のページになる", ()
     "aria-current",
     "page",
   );
+});
+
+test("pathname が不明なとき（プリレンダー時）はどのリンクも強調しない", () => {
+  render(<SidebarNav pathname={null} />);
+  for (const link of screen.getAllByRole("link")) {
+    expect(link).not.toHaveAttribute("aria-current");
+  }
 });

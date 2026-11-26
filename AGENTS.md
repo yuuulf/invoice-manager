@@ -40,26 +40,36 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Next.js 公式ドキュメント（`node_modules/next/dist/docs/` のバージョン一致版）の Project Structure・規約に従う。独自の構成を持ち込まない
 - アプリのコードは `src/` 配下に置く。import は `@/*` エイリアス（`src/*`）を使う
   - `src/app/`: ルーティング（ページ・レイアウト）。特定のルートでしか使わないものは、そのルート配下の `_components/` などに置く
-  - `src/components/`: 複数画面で使う共通 UI コンポーネント
+  - `src/components/`: 複数画面で使う UI。汎用部品（ボタン・入力欄・ラジオボタン・見出し等）は `src/components/ui/`
   - `src/db/`: DB 接続（`index.ts` の `getDb()`）とテーブル定義（`schema.ts`）
+  - `src/lib/<機能>/`: 画面に依存しない処理。入力チェック（`validation.ts`）、DB 操作（`repository.ts`。`db` を引数で受け取りテストではインメモリ DB を渡す）、選択肢の表示名（`labels.ts`）など
+  - Server Actions は各ルートの `actions.ts` に置き、入力チェックと DB 操作は `src/lib/` を呼ぶだけにする
 - 外部通信をしない（spec.md PRE-1）。`next/font/google` や CDN など、実行時・ビルド時に外部へ取りに行くものを使わない
 - Server Components を基本とし、状態やイベントが必要な箇所だけ `"use client"` にする
 - データ更新は Server Actions / Route Handlers を使う。SQLite へのアクセスはサーバー側コードに閉じ、クライアントへ持ち込まない
+- `cacheComponents` が有効なため、リクエスト時のデータ（`searchParams`・`params`・DB クエリ）を読むコンポーネントは `<Suspense>` で囲む。`usePathname()` も動的ルートでは Suspense が必要（サイドバーはフォールバック付きで囲み済み）
+- フォーマットと静的解析のルールは Prettier / ESLint の設定で機械的に強制する。設定で表現できるルールは AGENTS.md に書かず設定ファイルに書く
+- ルールを無効化するコメント（`eslint-disable` 等）は理由をコメントで添え、最小範囲にとどめる
 
 ## データベース（SQLite + Drizzle ORM）
 
 - DB には `@/db` の `getDb()` で接続する（`server-only` 付き）
 - テーブル定義を変えたら `npm run db:generate` でマイグレーション（`drizzle/`）を生成し、同じコミットに含める。生成済みのマイグレーションは手で書き換えない
-- マイグレーションは `getDb()` の初回接続時に自動で適用される。テストでは `createDb(":memory:")` の後に `runMigrations(db)` を呼ぶ
+- マイグレーションは `getDb()` の初回接続時に自動で適用される。テストでは `@/db/test-utils` の `createTestDb()`（マイグレーション適用済みのインメモリ DB）を使う
 - DB ファイルは `data/`（git 管理外）。保存先は環境変数 `DATABASE_PATH` で変更できる
 - `cacheComponents` が有効なため、better-sqlite3 の同期クエリはそのままだとビルド時にプリレンダーされる。リクエストごとに最新データを表示するページでは、クエリの前に `connection()`（`next/server`）を呼ぶ
-- フォーマットと静的解析のルールは Prettier / ESLint の設定で機械的に強制する。設定で表現できるルールは AGENTS.md に書かず設定ファイルに書く
-- ルールを無効化するコメント（`eslint-disable` 等）は理由をコメントで添え、最小範囲にとどめる
 
 ## UI と文言
 
-- UI コンポーネントは共通コンポーネント（ボタン、入力欄、テーブル、ダイアログ等）を作って再利用し、画面ごとに見た目や振る舞いをばらつかせない
-- 画面の文言は日本語で統一する。同じ概念には同じ用語を使う（例: 「取引先」「事業主」「請求書」「台帳」「確定」「アーカイブ」）。用語は `spec.md` に合わせ、新しい用語が必要なら spec.md に追記する
+- UI コンポーネントは共通コンポーネント（ボタン、入力欄、テーブル、ダイアログ等）を作って再利用し、画面ごとに見た目や振る舞いをばらつかせない。`src/components/ui/` にあるものは必ずそれを使い、足りなければそこに追加する
+- 一覧画面の操作は次の配置で統一する（アイコンは `lucide-react`、アイコンだけのボタンは `IconButton` / `IconLink` で操作名を `label` に渡す）
+  - ページ見出しの右: 「作成」ボタン、その右にアーカイブ一覧への切り替え（アーカイブアイコンのみ。`ArchiveToggle`、`?view=archived`）
+  - 一覧の各行の右端: 編集アイコンボタン、その右に縦三点リーダーのアイコンボタン（`ActionMenu`）。メニューには「アーカイブ」「削除」を入れる
+  - アーカイブ一覧の各行: 編集アイコンは出さず、縦三点リーダーのメニューに「アーカイブを解除」「削除」を入れる
+  - 元に戻せない操作（削除など）は `ActionMenuItem` の `confirmMessage` で確認してから実行する
+- 作成・編集フォームの下部は `FormActions` を使う。入力欄の右端に揃え、左から「キャンセル」「作成」（作成画面）／「保存」（編集画面）の順に並べる。「新規作成」「新規登録」とは書かない
+- 入力エラーは項目の下に表示し、入力欄に `aria-invalid` と `aria-describedby` で関連付ける（`TextField`・`RadioGroup` が対応済み）
+- 画面の文言は日本語で統一する。同じ概念には同じ用語を使う（例: 「取引先」「事業主」「請求書」「台帳」「確定」「アーカイブ」「作成」「保存」）。用語は `spec.md` に合わせ、新しい用語が必要なら spec.md に追記する
 - ボタン・見出し・エラーメッセージの言い回し（「〜する」「〜を入力してください」等）も既存画面と揃える
 
 ## テスト
