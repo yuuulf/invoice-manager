@@ -17,7 +17,15 @@ async function EditForm({
   const client = /^\d+$/.test(id) ? getClient(getDb(), Number(id)) : undefined;
   if (!client) notFound();
 
-  return <ClientForm action={updateClientAction} client={client} mode="edit" />;
+  return (
+    <ClientForm
+      // 保存でデータが変わったらフォームを作り直す（前に開いたときの入力状態が残るため）
+      key={client.updatedAt.getTime()}
+      action={updateClientAction}
+      client={client}
+      mode="edit"
+    />
+  );
 }
 
 export default function Page({ params }: PageProps<"/clients/[id]/edit">) {

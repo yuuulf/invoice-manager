@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { ButtonLink } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
 import { PageHeader } from "@/components/ui/page-header";
+import { ResetOnNavigation } from "@/components/ui/reset-on-navigation";
 import { getDb } from "@/db";
 import { getInvoice } from "@/lib/invoices/repository";
 import { prepareInvoiceOutput } from "@/lib/ledger/repository";
@@ -48,11 +49,14 @@ async function Preview({
         title="請求書PDFのプレビュー"
         className="h-[75vh] w-full rounded border border-zinc-300"
       />
-      <PreviewActions
-        invoiceId={invoice.id}
-        sampleHref={pdfHref}
-        fileName={invoicePdfFileName(invoiceNumber, { sample: true })}
-      />
+      {/* 開き直したら「確定する」のチェックを外した状態に戻す */}
+      <ResetOnNavigation>
+        <PreviewActions
+          invoiceId={invoice.id}
+          sampleHref={pdfHref}
+          fileName={invoicePdfFileName(invoiceNumber, { sample: true })}
+        />
+      </ResetOnNavigation>
     </div>
   );
 }

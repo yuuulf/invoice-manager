@@ -23,6 +23,8 @@ async function EditForm({
 
   return (
     <InvoiceForm
+      // 保存でデータが変わったらフォームを作り直す（前に開いたときの入力状態が残るため）
+      key={invoice.updatedAt.getTime()}
       action={updateInvoiceAction}
       invoice={invoice}
       clients={clients}
