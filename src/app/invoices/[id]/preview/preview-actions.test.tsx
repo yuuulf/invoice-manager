@@ -39,10 +39,27 @@ test("編集に戻る・SAMPLEをダウンロード・確定してダウンロ�
   );
 });
 
+test("「確定する」にチェックを入れるまで確定してダウンロードは押せない。SAMPLE はいつでもダウンロードできる", async () => {
+  renderActions();
+  const confirm = screen.getByRole("button", { name: "確定してダウンロード" });
+  const checkbox = screen.getByRole("checkbox", { name: "確定する" });
+  expect(checkbox).not.toBeChecked();
+  expect(confirm).toBeDisabled();
+  expect(
+    screen.getByRole("link", { name: "SAMPLEをダウンロード" }),
+  ).toBeInTheDocument();
+
+  await userEvent.click(checkbox);
+  expect(confirm).toBeEnabled();
+  await userEvent.click(checkbox);
+  expect(confirm).toBeDisabled();
+});
+
 test("確定は確認ダイアログで OK したときだけ実行する", async () => {
   const confirmDialog = vi.spyOn(window, "confirm").mockReturnValueOnce(false);
   confirmAction.mockResolvedValue(null);
   renderActions();
+  await userEvent.click(screen.getByRole("checkbox", { name: "確定する" }));
   await userEvent.click(
     screen.getByRole("button", { name: "確定してダウンロード" }),
   );
@@ -63,6 +80,7 @@ test("確定できなかったらメッセージを表示する", async () => {
     message: "請求番号が台帳と重複するため IABC-202611-002 に振り直しました",
   });
   renderActions();
+  await userEvent.click(screen.getByRole("checkbox", { name: "確定する" }));
   await userEvent.click(
     screen.getByRole("button", { name: "確定してダウンロード" }),
   );
