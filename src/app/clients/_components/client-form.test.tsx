@@ -19,7 +19,7 @@ const client: Client = {
   updatedAt: new Date(),
 };
 
-test("新規登録では支払い期限=翌月末日、手数料負担=指定なし、端数処理=切り捨てが選ばれている", () => {
+test("新規作成では支払い期限=翌月末日、手数料負担=指定なし、端数処理=切り捨てが選ばれている", () => {
   render(<ClientForm action={vi.fn()} mode="create" />);
   expect(screen.getByRole("radio", { name: "翌月末日" })).toBeChecked();
   expect(screen.getByRole("radio", { name: "指定なし" })).toBeChecked();
@@ -75,7 +75,7 @@ test("送信すると入力内容をアクションに渡し、返ってきた�
     screen.getByRole("textbox", { name: /取引先コード/ }),
     "ABC",
   );
-  await userEvent.click(screen.getByRole("button", { name: "登録" }));
+  await userEvent.click(screen.getByRole("button", { name: "作成" }));
 
   const formData = action.mock.calls[0][1];
   expect(formData.get("name")).toBe("テスト商事");

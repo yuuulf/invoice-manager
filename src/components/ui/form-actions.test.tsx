@@ -2,10 +2,10 @@ import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
 import { FormActions } from "./form-actions";
 
-test("新規は左からキャンセル・登録の順に並ぶ", () => {
+test("新規は左からキャンセル・作成の順に並ぶ", () => {
   render(<FormActions mode="create" cancelHref="/clients" />);
   const cancel = screen.getByRole("link", { name: "キャンセル" });
-  const submit = screen.getByRole("button", { name: "登録" });
+  const submit = screen.getByRole("button", { name: "作成" });
   expect(cancel).toHaveAttribute("href", "/clients");
   expect(submit).toHaveAttribute("type", "submit");
   expect(cancel.compareDocumentPosition(submit)).toBe(

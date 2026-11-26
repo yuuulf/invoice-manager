@@ -20,7 +20,7 @@ function form(overrides: Record<string, string> = {}) {
 }
 
 describe("parseClientForm", () => {
-  test("必須項目だけで登録できる。任意項目の空欄は null になる", () => {
+  test("必須項目だけで作成できる。任意項目の空欄は null になる", () => {
     expect(parseClientForm(form())).toMatchObject({
       ok: true,
       data: {

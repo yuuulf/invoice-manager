@@ -41,8 +41,8 @@ function idOf(code: string) {
   return client.id;
 }
 
-describe("取引先の登録", () => {
-  test("登録した取引先が一覧に取引先コード順で並ぶ", () => {
+describe("取引先の作成", () => {
+  test("作成した取引先が一覧に取引先コード順で並ぶ", () => {
     createClient(db, input({ code: "XYZ", name: "B社" }));
     createClient(db, input({ code: "ABC", name: "A社" }));
     expect(listClients(db, { archived: false }).map((c) => c.code)).toEqual([
@@ -51,7 +51,7 @@ describe("取引先の登録", () => {
     ]);
   });
 
-  test("取引先コードが重複していたら登録できない", () => {
+  test("取引先コードが重複していたら作成できない", () => {
     createClient(db, input());
     expect(createClient(db, input({ name: "別会社" }))).toEqual({
       ok: false,
