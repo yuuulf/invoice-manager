@@ -23,8 +23,8 @@ async function ClientList({
         title={archived ? "取引先（アーカイブ一覧）" : "取引先"}
         actions={
           <>
-            <ArchiveToggle basePath="/clients" archived={archived} />
             <ButtonLink href="/clients/new">新規登録</ButtonLink>
+            <ArchiveToggle basePath="/clients" archived={archived} />
           </>
         }
       />
