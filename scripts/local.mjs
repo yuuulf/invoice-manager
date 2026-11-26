@@ -5,10 +5,14 @@ import { execFileSync, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { createRequire } from "node:module";
+import { backupDatabase } from "./backup-db.mjs";
 import { findFreePort } from "./free-port.mjs";
 
 const PREFERRED_PORT = 3110;
 const HOST = "127.0.0.1";
+/** 起動時に取る DB バックアップの保持数 */
+const BACKUP_GENERATIONS = 3;
 
 function run(command, args, options = {}) {
   execFileSync(command, args, { stdio: "inherit", ...options });
@@ -62,6 +66,23 @@ const databasePath = path.resolve(
   repoRoot,
   process.env.DATABASE_PATH ?? path.join("data", "invoice-manager.db"),
 );
+
+// 起動する前に DB をバックアップし、新しいものから3世代だけ残す
+const backupDir = path.join(path.dirname(databasePath), "backups");
+const Database = createRequire(path.join(runDir, "package.json"))(
+  "better-sqlite3",
+);
+const backup = await backupDatabase({
+  databasePath,
+  backupDir,
+  keep: BACKUP_GENERATIONS,
+  Database,
+});
+if (backup.created) {
+  console.log(`▶ DB をバックアップしました: ${backup.created}`);
+  for (const name of backup.removed)
+    console.log(`  古いバックアップを削除: ${name}`);
+}
 
 console.log("");
 console.log(`▶ 起動します: http://localhost:${port}`);
