@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // pdfkit は実行時に自身のデータファイルを読み込むため、バンドルせずに使う
+  serverExternalPackages: ["pdfkit"],
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
