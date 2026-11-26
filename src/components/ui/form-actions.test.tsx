@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
 import { FormActions } from "./form-actions";
 
-test("新規は左からキャンセル・作成の順に並ぶ", () => {
+test("作成画面では左からキャンセル・作成の順に並ぶ", () => {
   render(<FormActions mode="create" cancelHref="/clients" />);
   const cancel = screen.getByRole("link", { name: "キャンセル" });
   const submit = screen.getByRole("button", { name: "作成" });

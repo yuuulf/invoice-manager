@@ -24,7 +24,7 @@ type Action = (
   formData: FormData,
 ) => Promise<ClientFormState>;
 
-/** 新規作成時の初期値（spec.md 5） */
+/** 作成時の初期値（spec.md 5） */
 const newClientValues: ClientFormValues = {
   name: "",
   code: "",

@@ -2,7 +2,7 @@ import { Button, ButtonLink } from "./button";
 
 export type FormMode = "create" | "edit";
 
-/** 送信ボタンの文言。新規は「作成」、編集は「保存」で統一する */
+/** 送信ボタンの文言。作成画面は「作成」、編集画面は「保存」で統一する */
 export const submitLabels: Record<FormMode, string> = {
   create: "作成",
   edit: "保存",

@@ -19,7 +19,7 @@ const client: Client = {
   updatedAt: new Date(),
 };
 
-test("新規作成では支払い期限=翌月末日、手数料負担=指定なし、端数処理=切り捨てが選ばれている", () => {
+test("作成画面では支払い期限=翌月末日、手数料負担=指定なし、端数処理=切り捨てが選ばれている", () => {
   render(<ClientForm action={vi.fn()} mode="create" />);
   expect(screen.getByRole("radio", { name: "翌月末日" })).toBeChecked();
   expect(screen.getByRole("radio", { name: "指定なし" })).toBeChecked();
