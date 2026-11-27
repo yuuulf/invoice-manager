@@ -4,7 +4,8 @@ import type { InvoiceSnapshot } from "@/lib/invoices/snapshot";
 import {
   createDocument,
   layoutRecipientBlock,
-  lowerGaps,
+  countNoteLines,
+  layoutNotes,
   renderInvoicePdf,
 } from "./render-invoice";
 import { sampleSnapshot } from "./test-snapshot";
@@ -114,19 +115,39 @@ describe("上段・左の配置（件名が長いとき）", () => {
   });
 });
 
-describe("下段の間隔（備考欄をページに収める）", () => {
-  test("ふつうは明細表〜支払期限 12mm、支払期限〜備考 8mm", () => {
-    expect(lowerGaps(sampleSnapshot, mm(100) + mm(7.2) * 12)).toEqual({
-      beforePayment: mm(12),
-      beforeNotes: mm(8),
-    });
+describe("備考欄（spec.md 7.1, 8.4）", () => {
+  const longLine = "あ".repeat(80);
+
+  test("行数は改行と折り返しを数える", () => {
+    expect(countNoteLines(null)).toBe(0);
+    expect(countNoteLines("1行目\n2行目")).toBe(2);
+    // 1 行に収まらない長さは 2 行
+    expect(countNoteLines(longLine)).toBe(2);
+    expect(countNoteLines(`${longLine}\n3行目`)).toBe(3);
   });
 
-  test("税込（合計欄3行）・手数料の行あり・件名が長いときは間隔を詰め、備考欄を確保する", () => {
-    // 明細の上端が下がり、合計欄が3行の場合の表の下端
-    const tableBottom = mm(110) + mm(7.2) * 14;
-    const gaps = lowerGaps(sampleSnapshot, tableBottom);
-    expect(gaps.beforePayment).toBeLessThan(mm(12));
-    expect(gaps.beforeNotes).toBeLessThan(mm(8));
+  test("欄に入るなら通常の大きさ（9.5pt、行の高さ 1.8 倍）", () => {
+    const layout = layoutNotes(createDocument("test"), "1\n2\n3\n4\n5", mm(45));
+    expect(layout).toMatchObject({ size: 9.5, fits: true });
+    expect(layout.lineHeight).toBeCloseTo(9.5 * 1.8);
+  });
+
+  test("欄が狭くて入らなければ、行間を詰めてから字を小さくし、5行を入れる", () => {
+    // 税込・宛名 2 行・件名 3 行・手数料の行ありのときの備考欄の高さ
+    const layout = layoutNotes(
+      createDocument("test"),
+      "1\n2\n3\n4\n5",
+      mm(27.4),
+    );
+    expect(layout.fits).toBe(true);
+    expect(layout.size).toBeLessThan(9.5);
+    expect(layout.size).toBeGreaterThanOrEqual(6.5);
+    expect(mm(3) * 2 + layout.lineHeight * 6).toBeLessThanOrEqual(mm(27.4));
+  });
+
+  test("備考が短ければ、欄が狭くても字は小さくしない", () => {
+    expect(layoutNotes(createDocument("test"), "1\n2", mm(27.4)).size).toBe(
+      9.5,
+    );
   });
 });

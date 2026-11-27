@@ -423,6 +423,7 @@ function InvoiceFields({
         <TextAreaField
           label="備考"
           name="notes"
+          hint="PDFで5行まで（長い行は折り返した分も数えます）"
           defaultValue={initial.notes}
           error={errors.notes}
           rows={4}

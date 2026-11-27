@@ -75,13 +75,8 @@ export function renderInvoicePdf(
   const { itemsTop } = drawRecipientBlock(doc, snapshot);
   drawOwnerBlock(doc, snapshot, seal);
   const tableBottom = drawItems(doc, snapshot, itemsTop);
-  const gaps = lowerGaps(snapshot, tableBottom);
-  const payBottom = drawPayment(
-    doc,
-    snapshot,
-    tableBottom + gaps.beforePayment,
-  );
-  drawNotes(doc, snapshot, payBottom + gaps.beforeNotes);
+  const payBottom = drawPayment(doc, snapshot, tableBottom + mm(12));
+  drawNotes(doc, snapshot, payBottom + mm(8));
   if (sample) drawSampleWatermark(doc);
 
   doc.end();
@@ -380,32 +375,6 @@ function drawItems(doc: Doc, s: InvoiceSnapshot, top: number) {
 const PAYMENT_LINE_HEIGHT = 9.5 * 1.8;
 /** ページの下余白 */
 const BOTTOM_MARGIN = mm(14);
-/** 備考欄の高さの目安。これより低くなるときは上の間隔を詰める */
-const NOTES_MIN_HEIGHT = mm(42);
-
-/** 支払期限・振込先の高さ */
-function paymentHeight(s: InvoiceSnapshot) {
-  const bankLineCount = bankLines(s.owner, s.client.feeBearer).length;
-  return PAYMENT_LINE_HEIGHT * (1 + bankLineCount) + mm(3);
-}
-
-/**
- * 明細表〜支払期限、支払期限〜備考の間隔。件名が長い・税込・手数料の行ありなどで
- * 備考欄が目安より低くなる場合は、間隔を詰めてページに収める
- */
-export function lowerGaps(s: InvoiceSnapshot, tableBottom: number) {
-  const normal = { beforePayment: mm(12), beforeNotes: mm(8) };
-  const notesHeight =
-    PAGE.height -
-    BOTTOM_MARGIN -
-    (tableBottom +
-      normal.beforePayment +
-      paymentHeight(s) +
-      normal.beforeNotes);
-  return notesHeight >= NOTES_MIN_HEIGHT
-    ? normal
-    : { beforePayment: mm(7), beforeNotes: mm(5) };
-}
 
 /** 下段: 支払期限・振込先。下端の y を返す */
 function drawPayment(doc: Doc, s: InvoiceSnapshot, top: number) {
@@ -429,11 +398,66 @@ function drawPayment(doc: Doc, s: InvoiceSnapshot, top: number) {
   return bankTop + lineHeight * lines.length;
 }
 
-/** 最下段: 備考（枠線で囲む） */
+/** 備考の行数の上限（PDF で折り返した行を含む。spec.md 7.1） */
+export const NOTES_MAX_LINES = 5;
+const NOTES_SIZE = 9.5;
+const NOTES_PADDING = { x: mm(4), y: mm(3) };
+const NOTES_WIDTH = CONTENT_WIDTH - NOTES_PADDING.x * 2;
+/** 字を小さくするときの下限（pt） */
+const NOTES_MIN_SIZE = 5;
+
+/** 備考を、指定した字の大きさで PDF の備考欄の幅に折り返したときの行数 */
+function wrappedNoteLines(doc: Doc, notes: string | null, size: number) {
+  doc.font(REGULAR).fontSize(size);
+  const lineHeight = doc.currentLineHeight();
+  return noteLines(notes).map((line) =>
+    Math.max(
+      1,
+      Math.round(
+        doc.heightOfString(line || " ", { width: NOTES_WIDTH, lineGap: 0 }) /
+          lineHeight,
+      ),
+    ),
+  );
+}
+
+/** 備考を PDF に出したときの行数（折り返しを含む、通常の字の大きさ）。上限のチェックに使う */
+export function countNoteLines(notes: string | null): number {
+  const doc = createDocument("count");
+  const count = wrappedNoteLines(doc, notes, NOTES_SIZE).reduce(
+    (sum, n) => sum + n,
+    0,
+  );
+  doc.end();
+  return count;
+}
+
+/**
+ * 備考欄の字の大きさと行の高さ。欄の高さ（件名の長さ・税込・手数料の行で変わる）に入りきらなければ、
+ * 行間を詰め、それでも入らなければ字を小さくする（spec.md 8.4）
+ */
+export function layoutNotes(doc: Doc, notes: string | null, height: number) {
+  const candidates: { size: number; lineFactor: number }[] = [
+    { size: NOTES_SIZE, lineFactor: 1.8 },
+  ];
+  for (let size = NOTES_SIZE; size >= NOTES_MIN_SIZE; size -= 0.25) {
+    candidates.push({ size, lineFactor: 1.5 });
+  }
+  const fits = ({ size, lineFactor }: (typeof candidates)[number]) => {
+    const lines = wrappedNoteLines(doc, notes, size).reduce((a, b) => a + b, 0);
+    // 見出し「備考：」の 1 行 + 本文
+    return NOTES_PADDING.y * 2 + size * lineFactor * (1 + lines) <= height;
+  };
+  const chosen = candidates.find(fits) ?? candidates[candidates.length - 1];
+  return {
+    size: chosen.size,
+    lineHeight: chosen.size * chosen.lineFactor,
+    fits: candidates.some(fits),
+  };
+}
+
+/** 最下段: 備考（枠線で囲む）。下余白までを備考欄にする */
 function drawNotes(doc: Doc, s: InvoiceSnapshot, top: number) {
-  const padding = { x: mm(4), y: mm(3) };
-  const lineHeight = 9.5 * 1.8;
-  // 下余白までを備考欄にする（ページからはみ出さない）
   const height = PAGE.height - BOTTOM_MARGIN - top;
   doc
     .lineWidth(0.75)
@@ -441,26 +465,22 @@ function drawNotes(doc: Doc, s: InvoiceSnapshot, top: number) {
     .rect(LEFT, top, CONTENT_WIDTH, height)
     .stroke();
 
-  let y = top + padding.y;
-  text(doc, "備考：", LEFT + padding.x, y, { font: BOLD });
+  const { size, lineHeight } = layoutNotes(doc, s.notes, height);
+  const x = LEFT + NOTES_PADDING.x;
+  let y = top + NOTES_PADDING.y;
+  text(doc, "備考：", x, y, { font: BOLD, size });
   y += lineHeight;
-  doc.font(REGULAR).fontSize(9.5);
-  const width = CONTENT_WIDTH - padding.x * 2;
-  const bottom = top + height - padding.y;
-  for (const line of noteLines(s.notes)) {
-    const lineBlockHeight = Math.max(
-      lineHeight,
-      doc.heightOfString(line || " ", {
-        width,
-        lineGap: lineHeight - 9.5 * 1.2,
-      }),
-    );
-    if (y + lineBlockHeight > bottom) break;
-    doc.text(line, LEFT + padding.x, y, {
-      width,
-      lineGap: lineHeight - 9.5 * 1.2,
-    });
-    y += lineBlockHeight;
+
+  const bottom = top + height - NOTES_PADDING.y;
+  const counts = wrappedNoteLines(doc, s.notes, size);
+  doc.font(REGULAR).fontSize(size);
+  const lineGap = lineHeight - doc.currentLineHeight();
+  for (const [i, line] of noteLines(s.notes).entries()) {
+    const blockHeight = counts[i] * lineHeight;
+    // 字を下限まで小さくしても入らない分は出さない（上限を設ける前に保存した備考など）
+    if (y + blockHeight > bottom + lineGap) break;
+    doc.text(line, x, y, { width: NOTES_WIDTH, lineGap });
+    y += blockHeight;
   }
 }
 
