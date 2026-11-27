@@ -1,7 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, expect, test, vi } from "vitest";
-import { ActionMenu, ActionMenuAnchor, ActionMenuItem } from "./action-menu";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import {
+  ActionMenu,
+  ActionMenuAnchor,
+  ActionMenuItem,
+  menuPosition,
+} from "./action-menu";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -118,4 +123,60 @@ test("リンクの項目はダウンロード用のリンクになり、選ぶ�
   await vi.waitFor(() =>
     expect(screen.queryByRole("menu")).not.toBeInTheDocument(),
   );
+});
+
+test("表の横スクロールの枠で切れないよう、メニューは画面基準の位置（ボタンの右下）に出す", async () => {
+  renderMenu();
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+    top: 100,
+    bottom: 136,
+    left: 900,
+    right: 936,
+    width: 36,
+    height: 36,
+    x: 900,
+    y: 100,
+    toJSON: () => ({}),
+  });
+  await userEvent.click(trigger());
+  const menu = screen.getByRole("menu");
+  expect(menu).toHaveClass("fixed");
+  expect(menu.style.top).toBe("140px");
+  expect(menu.style.right).toBe(`${window.innerWidth - 936}px`);
+});
+
+test("スクロールしたらメニューを閉じる", async () => {
+  renderMenu();
+  await userEvent.click(trigger());
+  expect(screen.getByRole("menu")).toBeInTheDocument();
+  fireEvent.scroll(window);
+  await vi.waitFor(() =>
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument(),
+  );
+});
+
+describe("menuPosition", () => {
+  test("ボタンの右下に出し、画面の右端からはみ出すときは画面の中におさえる", () => {
+    // jsdom ではスクロールバーを除いた幅が 0 になるため、画面の幅が基準になる
+    const width = window.innerWidth;
+    expect(menuPosition({ top: 100, bottom: 136, right: 500 })).toEqual({
+      top: 140,
+      right: width - 500,
+    });
+    // ボタンが横スクロールで画面の右の外にある
+    expect(menuPosition({ top: 100, bottom: 136, right: width + 50 })).toEqual({
+      top: 140,
+      right: 8,
+    });
+  });
+
+  test("下に収まらず上のほうが広ければ、ボタンの上に出す", () => {
+    const height = window.innerHeight;
+    expect(
+      menuPosition({ top: height - 40, bottom: height - 4, right: 500 }, 120),
+    ).toMatchObject({ bottom: 44 });
+    expect(
+      menuPosition({ top: 100, bottom: 136, right: 500 }, 120),
+    ).toMatchObject({ top: 140 });
+  });
 });
