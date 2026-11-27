@@ -147,13 +147,13 @@ export function basisMonthOf(period: Period): string {
   return period.type === "month" ? period.month : period.end.slice(0, 7);
 }
 
-/** 請求番号の先頭 12 桁 `I{取引先コード}-yyyyMM-`（spec.md 7.2） */
+/** 請求番号の先頭 15 桁 `INV-{取引先コード}-yyyyMM-`（spec.md 7.2） */
 export function invoiceNumberPrefix(clientCode: string, issueDate: string) {
-  return `I${clientCode}-${issueDate.slice(0, 4)}${issueDate.slice(5, 7)}-`;
+  return `INV-${clientCode}-${issueDate.slice(0, 4)}${issueDate.slice(5, 7)}-`;
 }
 
 /**
- * 次の請求番号。先頭 12 桁が一致する既存番号の最大 +1、なければ 001（spec.md 7.2）
+ * 次の請求番号。先頭 15 桁が一致する既存番号の最大 +1、なければ 001（spec.md 7.2）
  * @param existingNumbers 台帳の請求番号
  */
 export function nextInvoiceNumber(

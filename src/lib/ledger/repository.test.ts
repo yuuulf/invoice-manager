@@ -77,7 +77,7 @@ describe("確定前の出力", () => {
     const result = prepareInvoiceOutput(db, createInvoice());
     expect(result).toMatchObject({
       ok: true,
-      snapshot: { invoiceNumber: "IABC-202611-001", total: 50000 },
+      snapshot: { invoiceNumber: "INV-ABC-202611-001", total: 50000 },
       seal: null,
     });
   });
@@ -101,7 +101,7 @@ describe("確定（spec.md 7.4）", () => {
     expect(listLedger(db)).toEqual([
       expect.objectContaining({
         id: ledgerId,
-        invoiceNumber: "IABC-202611-001",
+        invoiceNumber: "INV-ABC-202611-001",
         clientName: "サンプル産業株式会社",
         subject: "Webサイト保守・改修",
         total: 50000,
@@ -144,29 +144,29 @@ describe("請求番号の連番（spec.md 7.2）", () => {
   test("確定済みの番号の次を採番する", () => {
     confirm(createInvoice());
     const second = createInvoice();
-    expect(getInvoice(db, second)?.invoiceNumber).toBe("IABC-202611-002");
+    expect(getInvoice(db, second)?.invoiceNumber).toBe("INV-ABC-202611-002");
     confirm(second);
     expect(listLedger(db).map((e) => e.invoiceNumber)).toEqual([
-      "IABC-202611-002",
-      "IABC-202611-001",
+      "INV-ABC-202611-002",
+      "INV-ABC-202611-001",
     ]);
   });
 
   test("作成中に同じ番号の別の請求書が確定されたら、振り直して確定を止める", () => {
     const a = createInvoice();
     const b = createInvoice();
-    expect(getInvoice(db, b)?.invoiceNumber).toBe("IABC-202611-001");
+    expect(getInvoice(db, b)?.invoiceNumber).toBe("INV-ABC-202611-001");
     confirm(a);
 
     expect(confirmInvoice(db, b)).toEqual({
       ok: false,
       renumbered: {
-        from: "IABC-202611-001",
-        to: "IABC-202611-002",
+        from: "INV-ABC-202611-001",
+        to: "INV-ABC-202611-002",
         reason: "duplicate",
       },
     });
-    expect(getInvoice(db, b)?.invoiceNumber).toBe("IABC-202611-002");
+    expect(getInvoice(db, b)?.invoiceNumber).toBe("INV-ABC-202611-002");
     expect(listLedger(db)).toHaveLength(1);
 
     confirm(b);
@@ -181,12 +181,12 @@ describe("請求番号の連番（spec.md 7.2）", () => {
     expect(checkInvoiceNumber(db, b)).toEqual({
       ok: false,
       renumbered: {
-        from: "IABC-202611-001",
-        to: "IABC-202611-002",
+        from: "INV-ABC-202611-001",
+        to: "INV-ABC-202611-002",
         reason: "duplicate",
       },
     });
-    expect(getInvoice(db, b)?.invoiceNumber).toBe("IABC-202611-002");
+    expect(getInvoice(db, b)?.invoiceNumber).toBe("INV-ABC-202611-002");
     expect(listLedger(db)).toHaveLength(1);
 
     // 振り直した後はチェックを通る
@@ -205,14 +205,14 @@ describe("請求番号の連番（spec.md 7.2）", () => {
     const first = confirm(createInvoice());
     const second = confirm(createInvoice());
     const third = createInvoice();
-    expect(getInvoice(db, third)?.invoiceNumber).toBe("IABC-202611-003");
-    deleteLedgerEntry(db, second, "IABC-202611-002");
+    expect(getInvoice(db, third)?.invoiceNumber).toBe("INV-ABC-202611-003");
+    deleteLedgerEntry(db, second, "INV-ABC-202611-002");
 
     expect(confirmInvoice(db, third)).toEqual({
       ok: false,
       renumbered: {
-        from: "IABC-202611-003",
-        to: "IABC-202611-002",
+        from: "INV-ABC-202611-003",
+        to: "INV-ABC-202611-002",
         reason: "gap",
       },
     });
@@ -222,17 +222,17 @@ describe("請求番号の連番（spec.md 7.2）", () => {
   test("台帳の番号より前の番号なら、台帳の連番に合わせて振り直す（それ以外）", () => {
     const a = createInvoice();
     const b = createInvoice();
-    const c = createInvoice(); // 3 件とも IABC-202611-001
+    const c = createInvoice(); // 3 件とも INV-ABC-202611-001
     const ledgerA = confirm(a);
     confirmInvoice(db, b); // 002 に振り直される
     confirm(b);
-    deleteLedgerEntry(db, ledgerA, "IABC-202611-001"); // 台帳は 002 だけ
+    deleteLedgerEntry(db, ledgerA, "INV-ABC-202611-001"); // 台帳は 002 だけ
 
     expect(confirmInvoice(db, c)).toEqual({
       ok: false,
       renumbered: {
-        from: "IABC-202611-001",
-        to: "IABC-202611-003",
+        from: "INV-ABC-202611-001",
+        to: "INV-ABC-202611-003",
         reason: "behind",
       },
     });
@@ -243,18 +243,18 @@ describe("請求番号の連番（spec.md 7.2）", () => {
     const b = createInvoice();
     confirm(a);
     saveInvoice(db, b, completeDraft({ subject: "変更" }));
-    expect(getInvoice(db, b)?.invoiceNumber).toBe("IABC-202611-001");
+    expect(getInvoice(db, b)?.invoiceNumber).toBe("INV-ABC-202611-001");
     expect(confirmInvoice(db, b)).toMatchObject({
       ok: false,
-      renumbered: { from: "IABC-202611-001", reason: "duplicate" },
+      renumbered: { from: "INV-ABC-202611-001", reason: "duplicate" },
     });
   });
 
   test("台帳を削除するとその番号は採番の対象から外れる", () => {
     const ledgerId = confirm(createInvoice());
-    deleteLedgerEntry(db, ledgerId, "IABC-202611-001");
+    deleteLedgerEntry(db, ledgerId, "INV-ABC-202611-001");
     expect(getInvoice(db, createInvoice())?.invoiceNumber).toBe(
-      "IABC-202611-001",
+      "INV-ABC-202611-001",
     );
   });
 });
@@ -262,13 +262,13 @@ describe("請求番号の連番（spec.md 7.2）", () => {
 describe("台帳の削除", () => {
   test("請求番号の入力が一致したときだけ削除する", () => {
     const ledgerId = confirm(createInvoice());
-    expect(deleteLedgerEntry(db, ledgerId, "IABC-202611-002")).toEqual({
+    expect(deleteLedgerEntry(db, ledgerId, "INV-ABC-202611-002")).toEqual({
       error: "請求番号が一致しません",
     });
     expect(listLedger(db)).toHaveLength(1);
 
     expect(
-      deleteLedgerEntry(db, ledgerId, " IABC-202611-001 "),
+      deleteLedgerEntry(db, ledgerId, " INV-ABC-202611-001 "),
     ).toBeUndefined();
     expect(listLedger(db)).toEqual([]);
   });
@@ -292,7 +292,7 @@ describe("台帳から請求書へのコピー（spec.md 7.4）", () => {
       dueDateManual: true,
       notes: "いつもお世話になっております。",
       // 元の番号は台帳にあるため次の番号になる
-      invoiceNumber: "IABC-202611-002",
+      invoiceNumber: "INV-ABC-202611-002",
       items: [
         expect.objectContaining({
           position: 0,

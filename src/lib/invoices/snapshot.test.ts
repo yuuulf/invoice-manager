@@ -61,7 +61,7 @@ function invoice(overrides: Partial<InvoiceWithItems> = {}): InvoiceWithItems {
     id: 10,
     clientId: 1,
     ownerId: 2,
-    invoiceNumber: "IABC-202611-001",
+    invoiceNumber: "INV-ABC-202611-001",
     issueDate: "2026-11-30",
     subject: "Webサイト保守・改修",
     periodType: "month",
@@ -174,7 +174,7 @@ describe("buildSnapshot", () => {
       owner,
     );
     expect(snapshot).toMatchObject({
-      invoiceNumber: "IABC-202611-001",
+      invoiceNumber: "INV-ABC-202611-001",
       period: { type: "month", month: "2026-11" },
       clientId: 1,
       ownerId: 2,

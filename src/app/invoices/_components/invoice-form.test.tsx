@@ -482,7 +482,7 @@ test("編集では保存済みの内容と請求番号を表示する", () => {
     id: 5,
     clientId: 1,
     ownerId: 9,
-    invoiceNumber: "IABC-202611-001",
+    invoiceNumber: "INV-ABC-202611-001",
     issueDate: "2026-11-30",
     subject: "Webサイト保守・改修",
     periodType: "month",
@@ -518,7 +518,7 @@ test("編集では保存済みの内容と請求番号を表示する", () => {
       mode="edit"
     />,
   );
-  expect(screen.getByText("IABC-202611-001")).toBeInTheDocument();
+  expect(screen.getByText("INV-ABC-202611-001")).toBeInTheDocument();
   expect(screen.getByLabelText(/請求日/)).toHaveValue("2026-11-30");
   expect(screen.getByLabelText("対象月")).toHaveValue("2026-11");
   expect(dueDate()).toHaveValue("2027-01-05");

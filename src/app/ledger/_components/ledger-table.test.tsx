@@ -10,7 +10,7 @@ vi.mock("../actions", () => ({
 
 const entry = {
   id: 3,
-  invoiceNumber: "IABC-202611-001",
+  invoiceNumber: "INV-ABC-202611-001",
   clientName: "サンプル産業株式会社",
   subject: "Webサイト保守・改修",
   issueDate: "2026-11-30",
@@ -22,7 +22,7 @@ test("請求番号・取引先・件名・請求日・合計・確定日を表�
   render(<LedgerTable entries={[entry]} />);
   const row = screen.getAllByRole("row")[1];
   for (const text of [
-    "IABC-202611-001",
+    "INV-ABC-202611-001",
     "サンプル産業株式会社",
     "Webサイト保守・改修",
     "2026-11-30",
@@ -37,7 +37,7 @@ test("PDF出力アイコンで確定済みの PDF をダウンロードできる
   render(<LedgerTable entries={[entry]} />);
   const link = screen.getByRole("link", { name: "PDF出力" });
   expect(link).toHaveAttribute("href", "/ledger/3/pdf");
-  expect(link).toHaveAttribute("download", "請求書_IABC-202611-001.pdf");
+  expect(link).toHaveAttribute("download", "請求書_INV-ABC-202611-001.pdf");
   expect(screen.queryByRole("link", { name: "編集" })).not.toBeInTheDocument();
 });
 
@@ -49,7 +49,7 @@ test("メニューに請求書にコピー・削除があり、削除は請求�
 
   await userEvent.click(screen.getByRole("menuitem", { name: "削除" }));
   const dialog = await screen.findByRole("dialog", { name: "台帳の削除" });
-  expect(dialog).toHaveTextContent("IABC-202611-001");
+  expect(dialog).toHaveTextContent("INV-ABC-202611-001");
   expect(within(dialog).getByRole("button", { name: "削除" })).toBeDisabled();
 });
 
