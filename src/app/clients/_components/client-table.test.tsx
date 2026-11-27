@@ -3,6 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import type { Client } from "@/db/schema";
 import { ClientTable } from "./client-table";
+import type { ClientSortKey } from "@/lib/clients/list-query";
+import type { ListView } from "@/lib/list-query";
+
+const view: ListView<ClientSortKey> = {
+  basePath: "/clients",
+  sort: null,
+  query: "",
+  filtered: false,
+};
 
 vi.mock("../actions", () => ({
   archiveClientAction: vi.fn(),
@@ -32,7 +41,7 @@ function menuItemNames() {
 }
 
 test("一覧では編集アイコンの右のメニューにアーカイブ・削除がある", async () => {
-  render(<ClientTable clients={[client]} archived={false} />);
+  render(<ClientTable view={view} clients={[client]} archived={false} />);
   const row = screen.getByRole("row", { name: /サンプル産業株式会社/ });
   const edit = within(row).getByRole("link", { name: "編集" });
   const menu = within(row).getByRole("button", { name: "その他の操作" });
@@ -46,7 +55,7 @@ test("一覧では編集アイコンの右のメニューにアーカイブ・�
 });
 
 test("アーカイブ一覧では編集アイコンを出さず、メニューにアーカイブを解除・削除がある", async () => {
-  render(<ClientTable clients={[client]} archived />);
+  render(<ClientTable view={view} clients={[client]} archived />);
   const row = screen.getByRole("row", { name: /サンプル産業株式会社/ });
   expect(
     within(row).queryByRole("link", { name: "編集" }),
@@ -59,9 +68,11 @@ test("アーカイブ一覧では編集アイコンを出さず、メニュー�
 });
 
 test("0件のときは案内を表示する", () => {
-  const { rerender } = render(<ClientTable clients={[]} archived={false} />);
+  const { rerender } = render(
+    <ClientTable view={view} clients={[]} archived={false} />,
+  );
   expect(screen.getByText("取引先が登録されていません。")).toBeInTheDocument();
-  rerender(<ClientTable clients={[]} archived />);
+  rerender(<ClientTable view={view} clients={[]} archived />);
   expect(
     screen.getByText("アーカイブした取引先はありません。"),
   ).toBeInTheDocument();

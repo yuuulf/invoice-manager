@@ -3,6 +3,7 @@
 import { ExternalLink } from "lucide-react";
 import { useActionState, useState } from "react";
 import { buttonClassName } from "@/components/ui/button";
+import { BACK_PARAM, listHref } from "@/lib/list-query";
 import { FormActions } from "@/components/ui/form-actions";
 import { FormColumns } from "@/components/ui/form-columns";
 import { FormSection } from "@/components/ui/form-section";
@@ -49,11 +50,14 @@ export function LedgerForm({
   action,
   entry,
   today,
+  back = "",
 }: {
   action: Action;
   entry: LedgerDetail;
   /** 送信済み・入金済みにしたときの日付の初期値（yyyy-MM-dd） */
   today: string;
+  /** 一覧に戻るときの条件（一覧の検索パラメータ） */
+  back?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, null);
   const { errors, onBlur } = useBlurValidation(
@@ -123,7 +127,12 @@ export function LedgerForm({
           today={today}
         />
       </FormColumns>
-      <FormActions mode="edit" cancelHref="/ledger" pending={pending} />
+      <input type="hidden" name={BACK_PARAM} value={back} />
+      <FormActions
+        mode="edit"
+        cancelHref={listHref("/ledger", back)}
+        pending={pending}
+      />
     </form>
   );
 }

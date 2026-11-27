@@ -4,6 +4,9 @@ import {
   tableClass,
 } from "@/components/ui/data-table";
 import { RowActions } from "@/components/ui/row-actions";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { withBack, type ListView } from "@/lib/list-query";
+import type { OwnerSortKey } from "@/lib/owners/list-query";
 import type { OwnerSummary } from "@/lib/owners/repository";
 import {
   archiveOwnerAction,
@@ -14,16 +17,20 @@ import {
 export function OwnerTable({
   owners,
   archived,
+  view,
 }: {
   owners: OwnerSummary[];
   archived: boolean;
+  view: ListView<OwnerSortKey>;
 }) {
   if (owners.length === 0) {
     return (
       <p className="text-zinc-500">
-        {archived
-          ? "アーカイブした事業主はありません。"
-          : "事業主が登録されていません。"}
+        {view.filtered
+          ? "条件に合う事業主はありません。"
+          : archived
+            ? "アーカイブした事業主はありません。"
+            : "事業主が登録されていません。"}
       </p>
     );
   }
@@ -32,10 +39,15 @@ export function OwnerTable({
     <table className={tableClass}>
       <thead>
         <tr className="border-b border-zinc-300 text-left">
-          <th className="px-3 py-2">屋号</th>
-          <th className="px-3 py-2">氏名</th>
-          <th className={`${columnWidth.phone} px-3 py-2`}>電話番号</th>
-          <th className="px-3 py-2">メールアドレス</th>
+          <SortableHeader {...view} label="屋号" sortKey="tradeName" />
+          <SortableHeader {...view} label="氏名" sortKey="name" />
+          <SortableHeader
+            {...view}
+            label="電話番号"
+            sortKey="phone"
+            className={columnWidth.phone}
+          />
+          <SortableHeader {...view} label="メールアドレス" sortKey="email" />
           <th className={`${columnWidth.actions} px-3 py-2`}>
             <span className="sr-only">操作</span>
           </th>
@@ -60,7 +72,7 @@ export function OwnerTable({
               <RowActions
                 id={owner.id}
                 archived={archived}
-                editHref={`/owners/${owner.id}/edit`}
+                editHref={withBack(`/owners/${owner.id}/edit`, view.query)}
                 archiveAction={archiveOwnerAction}
                 restoreAction={restoreOwnerAction}
                 deleteAction={deleteOwnerAction}

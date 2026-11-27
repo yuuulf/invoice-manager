@@ -25,6 +25,7 @@ export function LedgerRowActions({
   invoiceNumber,
   sent,
   sentFileUrl,
+  editHref,
 }: {
   id: number;
   invoiceNumber: string;
@@ -32,13 +33,15 @@ export function LedgerRowActions({
   sent: boolean;
   /** 送信ファイルの URL。あればメニューから開ける */
   sentFileUrl: string | null;
+  /** 編集画面の URL（一覧に戻るための条件付き） */
+  editHref: string;
 }) {
   const [deleting, setDeleting] = useState(false);
 
   return (
     <div className="flex items-center justify-end gap-1">
       <IconLink
-        href={`/ledger/${id}/edit`}
+        href={editHref}
         label="編集"
         icon={<Pencil className="size-5" aria-hidden />}
       />

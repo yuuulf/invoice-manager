@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
+import { BACK_PARAM, listHref } from "@/lib/list-query";
 import type { RowActionResult } from "@/lib/action-result";
 import { getText } from "@/lib/form-data";
 import {
@@ -57,5 +58,5 @@ export async function updateLedgerAction(
 
   updateLedgerStatus(getDb(), idFrom(formData), parsed.data);
   revalidatePath("/ledger", "layout");
-  redirect("/ledger");
+  redirect(listHref("/ledger", getText(formData, BACK_PARAM)));
 }

@@ -4,8 +4,11 @@ import {
   tableClass,
 } from "@/components/ui/data-table";
 import { RowActions } from "@/components/ui/row-actions";
+import { SortableHeader } from "@/components/ui/sortable-header";
 import { formatAmount } from "@/lib/invoices/calc";
+import type { InvoiceSortKey } from "@/lib/invoices/list-query";
 import type { InvoiceListRow } from "@/lib/invoices/repository";
+import { withBack, type ListView } from "@/lib/list-query";
 import {
   archiveInvoiceAction,
   copyInvoiceAction,
@@ -16,16 +19,20 @@ import {
 export function InvoiceTable({
   invoices,
   archived,
+  view,
 }: {
   invoices: InvoiceListRow[];
   archived: boolean;
+  view: ListView<InvoiceSortKey>;
 }) {
   if (invoices.length === 0) {
     return (
       <p className="text-zinc-500">
-        {archived
-          ? "アーカイブした請求書はありません。"
-          : "作成中の請求書はありません。"}
+        {view.filtered
+          ? "条件に合う請求書はありません。"
+          : archived
+            ? "アーカイブした請求書はありません。"
+            : "作成中の請求書はありません。"}
       </p>
     );
   }
@@ -34,13 +41,27 @@ export function InvoiceTable({
     <table className={tableClass}>
       <thead>
         <tr className="border-b border-zinc-300 text-left">
-          <th className={`${columnWidth.invoiceNumber} px-3 py-2`}>
-            請求書番号
-          </th>
-          <th className="px-3 py-2">取引先</th>
-          <th className="px-3 py-2">件名</th>
-          <th className={`${columnWidth.date} px-3 py-2`}>請求日</th>
-          <th className={`${columnWidth.amount} px-3 py-2 text-right`}>合計</th>
+          <SortableHeader
+            {...view}
+            label="請求書番号"
+            sortKey="invoiceNumber"
+            className={columnWidth.invoiceNumber}
+          />
+          <SortableHeader {...view} label="取引先" sortKey="clientName" />
+          <SortableHeader {...view} label="件名" sortKey="subject" />
+          <SortableHeader
+            {...view}
+            label="請求日"
+            sortKey="issueDate"
+            className={columnWidth.date}
+          />
+          <SortableHeader
+            {...view}
+            label="合計"
+            sortKey="total"
+            align="right"
+            className={columnWidth.amount}
+          />
           <th className={`${columnWidth.actions} px-3 py-2`}>
             <span className="sr-only">操作</span>
           </th>
@@ -68,7 +89,7 @@ export function InvoiceTable({
               <RowActions
                 id={invoice.id}
                 archived={archived}
-                editHref={`/invoices/${invoice.id}/edit`}
+                editHref={withBack(`/invoices/${invoice.id}/edit`, view.query)}
                 archiveAction={archiveInvoiceAction}
                 restoreAction={restoreInvoiceAction}
                 deleteAction={deleteInvoiceAction}

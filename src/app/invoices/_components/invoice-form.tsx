@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
+import { BACK_PARAM, listHref } from "@/lib/list-query";
 import { FormActions, type FormMode } from "@/components/ui/form-actions";
 import { FormMessage } from "@/components/ui/form-message";
 import { FormColumns } from "@/components/ui/form-columns";
@@ -152,6 +153,7 @@ export function InvoiceForm({
   owners,
   today,
   mode,
+  back = "",
 }: {
   action: Action;
   invoice?: InvoiceWithItems;
@@ -160,6 +162,8 @@ export function InvoiceForm({
   /** 請求日の初期値 "YYYY-MM-DD" */
   today: string;
   mode: FormMode;
+  /** 一覧に戻るときの条件（一覧の検索パラメータ） */
+  back?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, null);
   const values =
@@ -189,7 +193,12 @@ export function InvoiceForm({
         owners={owners}
       />
       <OutputSection pending={pending} />
-      <FormActions mode={mode} cancelHref="/invoices" pending={pending} />
+      <input type="hidden" name={BACK_PARAM} value={back} />
+      <FormActions
+        mode={mode}
+        cancelHref={listHref("/invoices", back)}
+        pending={pending}
+      />
     </form>
   );
 }

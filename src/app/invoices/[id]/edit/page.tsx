@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { getDb } from "@/db";
+import { BACK_PARAM, firstParam } from "@/lib/list-query";
 import { toDateString } from "@/lib/invoices/calc";
 import { getInvoice } from "@/lib/invoices/repository";
 import { updateInvoiceAction } from "../../actions";
@@ -11,10 +12,13 @@ import { InvoiceForm } from "../../_components/invoice-form";
 
 async function EditForm({
   params,
+  searchParams,
 }: {
   params: PageProps<"/invoices/[id]/edit">["params"];
+  searchParams: PageProps<"/invoices/[id]/edit">["searchParams"];
 }) {
   const { id } = await params;
+  const back = firstParam(await searchParams, BACK_PARAM);
   await connection();
   const db = getDb();
   const invoice = /^\d+$/.test(id) ? getInvoice(db, Number(id)) : undefined;
@@ -31,16 +35,21 @@ async function EditForm({
       owners={owners}
       today={toDateString(new Date())}
       mode="edit"
+
+      back={back}
     />
   );
 }
 
-export default function Page({ params }: PageProps<"/invoices/[id]/edit">) {
+export default function Page({
+  params,
+  searchParams,
+}: PageProps<"/invoices/[id]/edit">) {
   return (
     <>
       <PageHeader title="請求書の編集" />
       <Suspense fallback={<p className="text-zinc-500">読み込み中…</p>}>
-        <EditForm params={params} />
+        <EditForm params={params} searchParams={searchParams} />
       </Suspense>
     </>
   );

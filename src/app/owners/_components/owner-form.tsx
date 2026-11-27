@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { BACK_PARAM, listHref } from "@/lib/list-query";
 import { FormActions, type FormMode } from "@/components/ui/form-actions";
 import { FormColumns } from "@/components/ui/form-columns";
 import { FormSection } from "@/components/ui/form-section";
@@ -54,10 +55,13 @@ export function OwnerForm({
   action,
   owner,
   mode,
+  back = "",
 }: {
   action: Action;
   owner?: OwnerSummary;
   mode: FormMode;
+  /** 一覧に戻るときの条件（一覧の検索パラメータ） */
+  back?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, null);
   const values = state?.values ?? (owner ? valuesOf(owner) : newOwnerValues);
@@ -163,7 +167,12 @@ export function OwnerForm({
           error={errors.seal}
         />
       </FormSection>
-      <FormActions mode={mode} cancelHref="/owners" pending={pending} />
+      <input type="hidden" name={BACK_PARAM} value={back} />
+      <FormActions
+        mode={mode}
+        cancelHref={listHref("/owners", back)}
+        pending={pending}
+      />
     </form>
   );
 }
