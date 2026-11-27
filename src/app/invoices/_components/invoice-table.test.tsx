@@ -9,7 +9,7 @@ vi.mock("../actions", () => ({
   copyInvoiceAction: vi.fn(),
 }));
 
-test("請求番号・取引先・件名・請求日・合計を表示し、未採番はその旨を出す", () => {
+test("請求書番号・取引先・件名・請求日・合計を表示し、未採番はその旨を出す", () => {
   render(
     <InvoiceTable
       archived={false}
@@ -59,7 +59,7 @@ test("0件のときは案内を表示する", () => {
   ).toBeInTheDocument();
 });
 
-test("取引先・件名は 1 行で省略し、請求番号・請求日・合計は切らずに表示する", () => {
+test("取引先・件名は 1 行で省略し、請求書番号・請求日・合計は切らずに表示する", () => {
   render(
     <InvoiceTable
       archived={false}

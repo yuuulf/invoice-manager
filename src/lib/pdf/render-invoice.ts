@@ -6,6 +6,7 @@ import {
   bankLines,
   formatBilledAmount,
   formatJapaneseDate,
+  metaLines,
   formatPeriod,
   formatQuantityWithUnit,
   noteLines,
@@ -110,18 +111,13 @@ function text(
     .text(value, x, y, { lineBreak: false, ...rest });
 }
 
-/** 右上: 請求日・請求番号 */
+/** 右上: 請求日・請求書番号 */
 function drawMeta(doc: Doc, s: InvoiceSnapshot) {
   const width = mm(90);
   const x = RIGHT - width;
-  text(doc, `請求日：${formatJapaneseDate(s.issueDate)}`, x, mm(14), {
-    width,
-    align: "right",
-  });
-  text(doc, `請求番号：${s.invoiceNumber}`, x, mm(20), {
-    width,
-    align: "right",
-  });
+  const [issueDate, invoiceNumber] = metaLines(s);
+  text(doc, issueDate, x, mm(14), { width, align: "right" });
+  text(doc, invoiceNumber, x, mm(20), { width, align: "right" });
 }
 
 /** 上部中央: タイトル（字間を空ける） */

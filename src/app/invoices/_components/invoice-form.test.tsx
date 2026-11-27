@@ -477,7 +477,7 @@ describe("送信", () => {
   });
 });
 
-test("編集では保存済みの内容と請求番号を表示する", () => {
+test("編集では保存済みの内容と請求書番号を表示する", () => {
   const invoice: InvoiceWithItems = {
     id: 5,
     clientId: 1,

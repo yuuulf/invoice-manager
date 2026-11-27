@@ -34,7 +34,9 @@ export function InvoiceTable({
     <table className={tableClass}>
       <thead>
         <tr className="border-b border-zinc-300 text-left">
-          <th className={`${columnWidth.invoiceNumber} px-3 py-2`}>請求番号</th>
+          <th className={`${columnWidth.invoiceNumber} px-3 py-2`}>
+            請求書番号
+          </th>
           <th className="px-3 py-2">取引先</th>
           <th className="px-3 py-2">件名</th>
           <th className={`${columnWidth.date} px-3 py-2`}>請求日</th>

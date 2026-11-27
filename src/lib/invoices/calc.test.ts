@@ -142,7 +142,7 @@ describe("支払い期限（spec.md 5.1）", () => {
   });
 });
 
-describe("請求番号（spec.md 7.2）", () => {
+describe("請求書番号（spec.md 7.2）", () => {
   test("先頭 15 桁は INV- + 取引先コード + 請求日の年月", () => {
     expect(invoiceNumberPrefix("ABC", "2026-11-30")).toBe("INV-ABC-202611-");
   });

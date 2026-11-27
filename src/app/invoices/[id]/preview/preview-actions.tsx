@@ -13,7 +13,7 @@ import {
 /**
  * プレビュー画面のボタン（spec.md 7.4）: 編集に戻る / サンプル / 発行。
  * 「確定する」にチェックを入れるまで「発行」は押せない。
- * 「発行」を押したら、確認ダイアログの前に請求番号をチェックする（spec.md 7.2）。
+ * 「発行」を押したら、確認ダイアログの前に請求書番号をチェックする（spec.md 7.2）。
  */
 export function PreviewActions({
   invoiceId,
@@ -26,7 +26,7 @@ export function PreviewActions({
 }) {
   const [state, formAction, pending] = useActionState(
     async (prev: ConfirmState, formData: FormData): Promise<ConfirmState> => {
-      // 1. 請求番号をチェック。振り直したらメッセージを出して止める
+      // 1. 請求書番号をチェック。振り直したらメッセージを出して止める
       const checked = await checkInvoiceNumberAction(invoiceId);
       if (checked) return checked;
       // 2. 確認ダイアログ

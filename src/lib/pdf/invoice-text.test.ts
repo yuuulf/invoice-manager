@@ -7,6 +7,7 @@ import {
   formatPeriod,
   formatPostalCode,
   formatQuantityWithUnit,
+  metaLines,
   noteLines,
   ownerGroups,
   recipientLines,
@@ -39,6 +40,12 @@ const client: InvoiceSnapshot["client"] = {
   feeBearer: "client",
   rounding: "floor",
 };
+
+test("右上は請求日と請求書番号の2行（コロンは全角）", () => {
+  expect(
+    metaLines({ issueDate: "2026-11-30", invoiceNumber: "INV-ABC-202611-001" }),
+  ).toEqual(["請求日：2026年11月30日", "請求書番号：INV-ABC-202611-001"]);
+});
 
 test("日付は yyyy年MM月dd日（月日は0埋め）", () => {
   expect(formatJapaneseDate("2026-01-05")).toBe("2026年01月05日");

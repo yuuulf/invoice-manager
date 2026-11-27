@@ -64,11 +64,11 @@ test("「確定する」にチェックを入れるまで発行は押せない�
   expect(issueButton()).toBeDisabled();
 });
 
-test("発行を押すと、確認ダイアログの前に請求番号をチェックし、振り直したらダイアログを出さずにメッセージを表示する", async () => {
+test("発行を押すと、確認ダイアログの前に請求書番号をチェックし、振り直したらダイアログを出さずにメッセージを表示する", async () => {
   const dialog = vi.spyOn(window, "confirm");
   checkAction.mockResolvedValue({
     message:
-      "請求番号 INV-ABC-202611-001 はすでに台帳にあるため、INV-ABC-202611-002 に振り直しました。",
+      "請求書番号 INV-ABC-202611-001 はすでに台帳にあるため、INV-ABC-202611-002 に振り直しました。",
   });
   renderActions();
   await userEvent.click(checkbox());

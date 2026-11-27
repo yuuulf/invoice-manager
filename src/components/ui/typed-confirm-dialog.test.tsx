@@ -16,7 +16,7 @@ function renderDialog(
       title="台帳の削除"
       description="削除すると元に戻せません。"
       expected="INV-ABC-202611-001"
-      inputLabel="確認のため請求番号を入力してください"
+      inputLabel="確認のため請求書番号を入力してください"
       submitLabel="削除"
       action={action}
       hiddenFields={{ id: "3" }}
@@ -26,7 +26,9 @@ function renderDialog(
 }
 
 const input = () =>
-  screen.getByRole("textbox", { name: "確認のため請求番号を入力してください" });
+  screen.getByRole("textbox", {
+    name: "確認のため請求書番号を入力してください",
+  });
 
 test("閉じているときは何も表示しない", () => {
   render(
@@ -71,11 +73,13 @@ test("実行すると入力値と hidden の値を送り、成功したら閉じ
 
 test("失敗したらメッセージを表示して開いたままにする", async () => {
   const { onClose } = renderDialog(
-    vi.fn(async () => ({ error: "請求番号が一致しません" })),
+    vi.fn(async () => ({ error: "請求書番号が一致しません" })),
   );
   await userEvent.type(input(), "INV-ABC-202611-001");
   await userEvent.click(screen.getByRole("button", { name: "削除" }));
-  expect(await screen.findByText("請求番号が一致しません")).toBeInTheDocument();
+  expect(
+    await screen.findByText("請求書番号が一致しません"),
+  ).toBeInTheDocument();
   expect(onClose).not.toHaveBeenCalled();
 });
 

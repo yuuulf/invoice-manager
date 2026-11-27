@@ -74,7 +74,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - 一覧の各行の右端: 編集アイコンボタン、その右に縦三点リーダーのアイコンボタン（`ActionMenu`）。メニューには「アーカイブ」「削除」を入れる（請求書一覧は先頭に「コピー」も。`RowActions` の `copyAction`）。アーカイブ・削除がある一覧は `RowActions` を使う
   - アーカイブ一覧の各行: 編集アイコンは出さず、縦三点リーダーのメニューに「アーカイブを解除」「削除」を入れる
   - 元に戻せない操作（削除など）は `ActionMenuItem` の `confirmMessage` で確認してから実行する
-  - テーブルは `@/components/ui/data-table` の `tableClass`（固定レイアウト）を使い、横スクロールさせない。切れてはいけない列（請求番号・日付・金額・取引先コード）は `columnWidth` で幅を決めてセルに `whitespace-nowrap` を付け、残りの列は幅を分け合う。はみ出す文字は `ClampedText` で 1 行に収めて「…」にする
+  - テーブルは `@/components/ui/data-table` の `tableClass`（固定レイアウト）を使い、横スクロールさせない。切れてはいけない列（請求書番号・日付・金額・取引先コード）は `columnWidth` で幅を決めてセルに `whitespace-nowrap` を付け、残りの列は幅を分け合う。はみ出す文字は `ClampedText` で 1 行に収めて「…」にする
   - 行の操作が失敗したとき（使用中で削除できない等）は、Server Action が `RowActionResult`（`{ error }`）を返し、`RowActions` がメッセージを表示する
 - 入力欄は `TextField` / `SelectField` / `TextAreaField` / `RadioGroup` を使う（ラベル・注釈・エラーの関連付けは `Field` が行う）
 - Server Action で送信するフォームの `SelectField` は `value` で固定しない。送信後に React がフォームをリセットすると選択が外れて見えるため、`defaultValue`（送信結果の値でフォームを作り直す）にし、`onChange` で state に反映する
@@ -83,7 +83,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 縦に長いフォームは、狭いまとまり同士を `FormColumns` で左右 2 列に並べる（狭い画面では 1 列）。幅が要るまとまり（請求書の明細・備考など）は 1 列のまま
   - 事業主: 基本情報｜振込先。請求書: 基本情報｜対象期間・支払い期限。台帳: 確定した内容＋備考｜送信・入金
 - フォーム全体に関わるエラー（例: 必須項目が足りず出力できない）は `FormMessage` で先頭に表示する
-- 取り消せない重要な操作（台帳の削除など）は `TypedConfirmDialog` で決められた文字列（請求番号など）を入力させてから実行する
+- 取り消せない重要な操作（台帳の削除など）は `TypedConfirmDialog` で決められた文字列（請求書番号など）を入力させてから実行する
 - 請求書の PDF 出力は、保存してプレビュー画面（`/invoices/[id]/preview`、PDF を `?inline=1` で埋め込み表示）を開き、ダウンロード・確定はそこで行う。埋め込みの iframe は前に開いた画面ごと残るため、URL と `key` に PDF の内容から作る `pdfVersion` を付け、内容が変わったら読み込み直させる。確定のように別画面へ移ってからダウンロードさせるときは、`?download=...` 付きの画面へリダイレクトして `AutoDownload` を表示する
 - 作成・編集フォームの下部は `FormActions` を使う。入力欄の右端に揃え、左から「キャンセル」「作成」（作成画面）／「保存」（編集画面）の順に並べる。「新規作成」「新規登録」とは書かない
 - 入力エラーは項目の下に表示し、入力欄に `aria-invalid` と `aria-describedby` で関連付ける（`TextField`・`RadioGroup` が対応済み）

@@ -47,11 +47,11 @@ async function Preview({
   return (
     <div className="space-y-4">
       <p className="text-sm text-zinc-600">
-        請求番号 <span className="font-mono font-bold">{invoiceNumber}</span>{" "}
+        請求書番号 <span className="font-mono font-bold">{invoiceNumber}</span>{" "}
         の確定前のPDFです（「SAMPLE」の透かし入り）。確定すると透かしのないPDFになり、台帳に記録されます。
       </p>
       <iframe
-        // 内容（請求番号・取引先・事業主を含む）が変わったら読み込み直す。
+        // 内容（請求書番号・取引先・事業主を含む）が変わったら読み込み直す。
         // 前に開いた画面は iframe ごと残るため、URL と key の両方を変える
         key={version}
         src={`${pdfHref}?inline=1&v=${version}`}

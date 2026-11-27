@@ -54,7 +54,7 @@ describe("作成中の保存", () => {
   });
 });
 
-describe("請求番号（spec.md 7.2）", () => {
+describe("請求書番号（spec.md 7.2）", () => {
   test("取引先と請求日がそろったら採番する", () => {
     const clientId = insertClient(db, { code: "ABC" });
     expect(save(undefined, { clientId }).invoiceNumber).toBeNull();

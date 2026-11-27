@@ -34,7 +34,7 @@ export async function copyLedgerAction(formData: FormData): Promise<void> {
   redirect(`/invoices/${invoiceId}/edit`);
 }
 
-/** 台帳を削除する。請求番号の入力で確認する（spec.md 4） */
+/** 台帳を削除する。請求書番号の入力で確認する（spec.md 4） */
 export async function deleteLedgerAction(
   formData: FormData,
 ): Promise<RowActionResult> {

@@ -5,10 +5,10 @@ import { StatusBadge } from "./status-badge";
 test("状態名とアイコンを、状態に合わせた色で表示する", () => {
   render(
     <StatusBadge tone="success" icon={<svg data-testid="icon" />}>
-      入金済み
+      入金済
     </StatusBadge>,
   );
-  const badge = screen.getByText("入金済み");
+  const badge = screen.getByText("入金済");
   expect(badge).toHaveAttribute("data-tone", "success");
   expect(badge).toHaveClass("bg-emerald-50", "whitespace-nowrap");
   expect(screen.getByTestId("icon").parentElement).toBe(badge);
