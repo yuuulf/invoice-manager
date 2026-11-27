@@ -224,6 +224,49 @@ describe("送信", () => {
     });
   });
 
+  test("エラーが返っても、選んだ取引先・事業主は選択されたまま", async () => {
+    const action = vi.fn(async (_state: unknown, formData: FormData) => ({
+      errors: {
+        notes: "備考は5行以内（PDFで折り返した行を含む）で入力してください",
+      },
+      values: {
+        clientId: String(formData.get("clientId")),
+        ownerId: String(formData.get("ownerId")),
+        issueDate: "2026-11-30",
+        subject: "",
+        periodType: "",
+        periodMonth: "",
+        periodStart: "",
+        periodEnd: "",
+        dueDate: "",
+        dueDateManual: false,
+        notes: "",
+        items: Array.from({ length: 10 }, () => ({
+          description: "",
+          quantity: "",
+          unit: "",
+          unitPrice: "",
+        })),
+      },
+    }));
+    renderNew(action);
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: /取引先/ }),
+      "2",
+    );
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: /事業主/ }),
+      "9",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "作成" }));
+
+    await screen.findByText(
+      "備考は5行以内（PDFで折り返した行を含む）で入力してください",
+    );
+    expect(screen.getByRole("combobox", { name: /取引先/ })).toHaveValue("2");
+    expect(screen.getByRole("combobox", { name: /事業主/ })).toHaveValue("9");
+  });
+
   test("返ってきたエラーを表示し、入力値を保つ", async () => {
     const action = vi.fn(async (_state: unknown, formData: FormData) => ({
       errors: {
