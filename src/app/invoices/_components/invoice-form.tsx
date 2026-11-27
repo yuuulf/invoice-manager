@@ -254,7 +254,9 @@ function InvoiceFields({
           label="取引先"
           name="clientId"
           required
-          value={clientId}
+          // value で固定すると、送信後に React がフォームをリセットしたとき選択が外れて見える。
+          // defaultValue（送信結果の値で作り直される）にし、変更だけを state に反映する
+          defaultValue={initial.clientId}
           onChange={(e) => setClientId(e.target.value)}
           error={errors.clientId}
           options={clients.map((c) => ({
