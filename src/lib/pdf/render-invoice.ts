@@ -13,6 +13,7 @@ import {
   recipientLines,
   totalRows,
 } from "./invoice-text";
+import { drawFitted, fitInBox, fitText, type Fitted } from "./fit-text";
 
 // 配置は spec.md 8.2（サンプル PDF の配置）に合わせる。単位は pt（1mm ≒ 2.835pt）
 const mm = (value: number) => value * 2.8346;
@@ -33,8 +34,12 @@ const COL = { quantity: mm(24), unitPrice: mm(24), amount: mm(28) };
 const ROW_HEIGHT = mm(7.2);
 const ITEM_ROWS = 10;
 const CELL_PADDING = mm(2);
-/** 明細の上端。件名が長くご請求金額が下がったときは、その分下げる */
+/** 明細の上端。件名が長くご請求金額が下がったとき・事業主情報が長いときは、その分下げる */
 const ITEMS_TOP = mm(100);
+/** 欄に入りきらない文字を小さくするときの下限（pt。spec.md 8.3） */
+const MIN_SIZE = 7;
+/** 宛名は大きく見せたいので、下限を大きめにする */
+const RECIPIENT_MIN_SIZE = 9;
 
 type Options = {
   /** 確定していない出力。SAMPLE の透かしを入れる（spec.md 7.4） */
@@ -72,11 +77,17 @@ export function renderInvoicePdf(
 
   drawMeta(doc, snapshot);
   drawTitle(doc);
-  const { itemsTop } = drawRecipientBlock(doc, snapshot);
-  drawOwnerBlock(doc, snapshot, seal);
+  const recipient = drawRecipientBlock(doc, snapshot);
+  const ownerBottom = drawOwnerBlock(doc, snapshot, seal);
+  const itemsTop = Math.max(recipient.itemsTop, ownerBottom + mm(5));
   const tableBottom = drawItems(doc, snapshot, itemsTop);
-  const payBottom = drawPayment(doc, snapshot, tableBottom + mm(12));
-  drawNotes(doc, snapshot, payBottom + mm(8));
+  const gaps = lowerGaps(doc, snapshot, tableBottom);
+  const payBottom = drawPayment(
+    doc,
+    snapshot,
+    tableBottom + gaps.beforePayment,
+  );
+  drawNotes(doc, snapshot, payBottom + gaps.beforeNotes);
   if (sample) drawSampleWatermark(doc);
 
   doc.end();
@@ -136,9 +147,18 @@ const RECIPIENT_SIZE = 13;
 export function layoutRecipientBlock(doc: Doc, s: InvoiceSnapshot) {
   const width = CONTENT_WIDTH * 0.52;
   const recipientY = mm(47);
-  const recipientCount = recipientLines(s.client).length;
+  // 会社名・部署が長いときは字を小さくし、それでも入らなければ折り返す
+  const recipient = recipientLines(s.client).map((line) =>
+    fitText(doc, line, {
+      font: BOLD,
+      size: RECIPIENT_SIZE,
+      minSize: RECIPIENT_MIN_SIZE,
+      width,
+      lineFactor: 1.5,
+    }),
+  );
   const underlineY =
-    recipientY + recipientCount * RECIPIENT_SIZE * 1.5 + mm(0.5);
+    recipientY + recipient.reduce((sum, f) => sum + f.height, 0) + mm(0.5);
   const subjectY = underlineY + mm(6);
 
   doc.font(BOLD).fontSize(SUBJECT_SIZE);
@@ -161,6 +181,7 @@ export function layoutRecipientBlock(doc: Doc, s: InvoiceSnapshot) {
   return {
     width,
     recipientY,
+    recipient,
     underlineY,
     subjectY,
     labelWidth,
@@ -183,20 +204,15 @@ function drawRecipientBlock(doc: Doc, s: InvoiceSnapshot) {
   const layout = layoutRecipientBlock(doc, s);
   const { width } = layout;
 
-  doc.font(BOLD).fontSize(RECIPIENT_SIZE);
-  const lines = recipientLines(s.client);
+  let y = layout.recipientY;
+  for (const f of layout.recipient) {
+    drawFitted(doc, f, LEFT, y);
+    y += f.height;
+  }
   const lineWidth = Math.min(
     width,
-    Math.max(...lines.map((line) => doc.widthOfString(line))),
+    Math.max(...layout.recipient.map((f) => f.width)),
   );
-  lines.forEach((line, i) => {
-    text(doc, line, LEFT, layout.recipientY + i * RECIPIENT_SIZE * 1.5, {
-      font: BOLD,
-      size: RECIPIENT_SIZE,
-      width,
-      ellipsis: true,
-    });
-  });
   doc
     .moveTo(LEFT, layout.underlineY)
     .lineTo(LEFT + lineWidth, layout.underlineY)
@@ -234,47 +250,141 @@ function drawRecipientBlock(doc: Doc, s: InvoiceSnapshot) {
   return layout;
 }
 
-/** 上段・右: 事業主情報。データ印は屋号・氏名の右に置き、文字と重ねない */
-function drawOwnerBlock(doc: Doc, s: InvoiceSnapshot, seal: Buffer | null) {
-  const sealSize = mm(20);
-  const x = mm(144);
-  const textWidth = RIGHT - sealSize - mm(2) - x;
+const SEAL_SIZE = mm(20);
+const SEAL_TOP = mm(45);
+/** 事業主情報の左端。長い項目があるときは、宛名の欄にかからない範囲（OWNER_MIN_X）まで左に広げる */
+const OWNER_X = mm(144);
+const OWNER_MIN_X = mm(118);
+
+/**
+ * 上段・右の事業主情報の配置。データ印は屋号・氏名の右に置き、文字と重ねない。
+ * 入りきらない項目は字を小さくし、それでも入らなければ折り返す（spec.md 8.3）
+ */
+export function layoutOwnerBlock(
+  doc: Doc,
+  s: InvoiceSnapshot,
+  hasSeal: boolean,
+) {
   const groups = ownerGroups(s.owner);
-  let y = mm(47);
+  const sealSpace = hasSeal ? SEAL_SIZE + mm(2) : 0;
+  const names = [
+    ...(groups.names.tradeName
+      ? [{ value: groups.names.tradeName, font: BOLD, size: 11 }]
+      : []),
+    { value: groups.names.name, font: REGULAR, size: 10 },
+  ];
+  const lines: {
+    value: string;
+    font: string;
+    size: number;
+    lineFactor: number;
+    gapBefore: number;
+  }[] = [
+    ...names.map((n) => ({ ...n, lineFactor: 1.5, gapBefore: 0 })),
+    ...[groups.address, groups.contact].flatMap((group) =>
+      group.map((value, i) => ({
+        value,
+        font: REGULAR,
+        size: 9,
+        lineFactor: 1.65,
+        gapBefore: i === 0 ? mm(2.5) : 0,
+      })),
+    ),
+  ];
+  const sealBottom = SEAL_TOP + SEAL_SIZE;
+  const top = mm(47);
+  /** データ印の横に来る行（データ印と重ならないよう、データ印の手前までの幅にする） */
+  const besideSeal = (y: number) => hasSeal && y < sealBottom;
 
-  if (groups.names.tradeName) {
-    text(doc, groups.names.tradeName, x, y, {
-      font: BOLD,
-      size: 11,
-      width: textWidth,
-      ellipsis: true,
+  // ふつうの大きさで 1 行に入る幅を確保できるよう、左端を決める
+  let y = top;
+  let needed = 0;
+  for (const line of lines) {
+    y += line.gapBefore;
+    doc.font(line.font).fontSize(line.size);
+    needed = Math.max(
+      needed,
+      doc.widthOfString(line.value) + (besideSeal(y) ? sealSpace : 0),
+    );
+    y += line.size * line.lineFactor;
+  }
+  const x = Math.min(OWNER_X, Math.max(OWNER_MIN_X, RIGHT - needed));
+
+  // 入りきらない行は字を小さくし、それでも入らなければ折り返す
+  const entries: { fitted: Fitted; y: number }[] = [];
+  y = top;
+  for (const line of lines) {
+    y += line.gapBefore;
+    const fitted = fitText(doc, line.value, {
+      font: line.font,
+      size: line.size,
+      minSize: MIN_SIZE,
+      width: RIGHT - x - (besideSeal(y) ? sealSpace : 0),
+      lineFactor: line.lineFactor,
     });
-    y += 11 * 1.5;
+    entries.push({ fitted, y });
+    y += fitted.height;
   }
-  text(doc, groups.names.name, x, y, {
-    size: 10,
-    width: textWidth,
-    ellipsis: true,
-  });
-  y += 10 * 1.5 + mm(2.5);
+  const bottom = Math.max(y, hasSeal ? sealBottom : 0);
+  return { x, entries, bottom };
+}
 
-  for (const line of groups.address) {
-    text(doc, line, x, y, { size: 9, width: RIGHT - x, ellipsis: true });
-    y += 9 * 1.65;
+/** 上段・右: 事業主情報。下端の y を返す */
+function drawOwnerBlock(doc: Doc, s: InvoiceSnapshot, seal: Buffer | null) {
+  const layout = layoutOwnerBlock(doc, s, seal !== null);
+  for (const { fitted, y } of layout.entries) {
+    drawFitted(doc, fitted, layout.x, y);
   }
-  y += mm(2.5);
-  for (const line of groups.contact) {
-    text(doc, line, x, y, { size: 9, width: RIGHT - x, ellipsis: true });
-    y += 9 * 1.65;
-  }
-
   if (seal) {
-    doc.image(seal, RIGHT - sealSize, mm(45), {
-      fit: [sealSize, sealSize],
+    doc.image(seal, RIGHT - SEAL_SIZE, SEAL_TOP, {
+      fit: [SEAL_SIZE, SEAL_SIZE],
       align: "center",
       valign: "center",
     });
   }
+  return layout.bottom;
+}
+
+/**
+ * 明細表の 1 マスに文字を描く。入りきらなければ字を小さくし、それでも入らなければ
+ * 行の高さに収まるように折り返す（spec.md 8.3）
+ */
+export function fitCell(
+  doc: Doc,
+  value: string,
+  width: number,
+  { font = REGULAR, size = 9.5 }: { font?: string; size?: number } = {},
+) {
+  return fitInBox(doc, value, {
+    font,
+    size,
+    minSize: MIN_SIZE,
+    width: width - CELL_PADDING * 2,
+    height: ROW_HEIGHT - mm(1),
+    lineFactor: 1.2,
+  });
+}
+
+function drawCell(
+  doc: Doc,
+  value: string,
+  x: number,
+  rowTop: number,
+  width: number,
+  options: { align: "left" | "right"; font?: string; size?: number },
+) {
+  const fitted = fitCell(doc, value, width, options);
+  drawFitted(
+    doc,
+    fitted,
+    x + CELL_PADDING,
+    rowTop + (ROW_HEIGHT - fitted.height) / 2,
+    {
+      align: options.align,
+      valign: "middle",
+      width: width - CELL_PADDING * 2,
+    },
+  );
 }
 
 /** 中段: 明細（10 行）と合計。表の下端の y を返す */
@@ -318,19 +428,15 @@ function drawItems(doc: Doc, s: InvoiceSnapshot, top: number) {
     const rowTop = top + ROW_HEIGHT * (row + 1);
     const item = s.items.find((i) => i.position === row);
     if (!item) continue;
-    const y = textY(rowTop, 9.5);
-    text(doc, item.description, xs.description + CELL_PADDING, y, {
-      width: widths.description - CELL_PADDING * 2,
-      ellipsis: true,
-    });
-    const right = (key: "quantity" | "unitPrice" | "amount", value: string) =>
-      text(doc, value, xs[key] + CELL_PADDING, y, {
-        width: widths[key] - CELL_PADDING * 2,
-        align: "right",
-      });
-    right("quantity", formatQuantityWithUnit(item.quantity, item.unit));
-    right("unitPrice", formatAmount(item.unitPrice));
-    right("amount", formatAmount(item.amount));
+    const cell = (
+      key: keyof typeof xs,
+      value: string,
+      align: "left" | "right",
+    ) => drawCell(doc, value, xs[key], rowTop, widths[key], { align });
+    cell("description", item.description, "left");
+    cell("quantity", formatQuantityWithUnit(item.quantity, item.unit), "right");
+    cell("unitPrice", formatAmount(item.unitPrice), "right");
+    cell("amount", formatAmount(item.amount), "right");
   }
 
   // 罫線
@@ -361,12 +467,10 @@ function drawItems(doc: Doc, s: InvoiceSnapshot, top: number) {
       width: COL.quantity + COL.unitPrice,
       align: "center",
     });
-    const size = row.bold ? 10.5 : 9.5;
-    text(doc, row.value, xs.amount + CELL_PADDING, textY(rowTop, size), {
-      font: row.bold ? BOLD : REGULAR,
-      size,
-      width: COL.amount - CELL_PADDING * 2,
+    drawCell(doc, row.value, xs.amount, rowTop, COL.amount, {
       align: "right",
+      font: row.bold ? BOLD : REGULAR,
+      size: row.bold ? 10.5 : 9.5,
     });
   });
   return totalBottom;
@@ -376,26 +480,54 @@ const PAYMENT_LINE_HEIGHT = 9.5 * 1.8;
 /** ページの下余白 */
 const BOTTOM_MARGIN = mm(14);
 
+const DUE_LABEL = "支払期限（お振込み期限）：";
+
+/** 下段の支払期限・振込先の配置（top からの相対位置）。振込先が長いときは字を小さくし、それでも入らなければ折り返す */
+function layoutPayment(doc: Doc, s: InvoiceSnapshot) {
+  doc.font(BOLD).fontSize(9.5);
+  const valueX = LEFT + doc.widthOfString(DUE_LABEL) + mm(2);
+  const bankOffset = PAYMENT_LINE_HEIGHT + mm(3);
+  const bank = bankLines(s.owner, s.client.feeBearer).map((line) =>
+    fitText(doc, line, {
+      font: REGULAR,
+      size: 9.5,
+      minSize: MIN_SIZE,
+      width: RIGHT - valueX,
+      lineFactor: 1.8,
+    }),
+  );
+  const height = bankOffset + bank.reduce((sum, f) => sum + f.height, 0);
+  return { valueX, bankOffset, bank, height };
+}
+
 /** 下段: 支払期限・振込先。下端の y を返す */
 function drawPayment(doc: Doc, s: InvoiceSnapshot, top: number) {
-  const lineHeight = PAYMENT_LINE_HEIGHT;
-  const dueLabel = "支払期限（お振込み期限）：";
-  doc.font(BOLD).fontSize(9.5);
-  const valueX = LEFT + doc.widthOfString(dueLabel) + mm(2);
-  text(doc, dueLabel, LEFT, top, { font: BOLD });
-  text(doc, formatJapaneseDate(s.dueDate), valueX, top);
-
-  const bankTop = top + lineHeight + mm(3);
+  const layout = layoutPayment(doc, s);
+  text(doc, DUE_LABEL, LEFT, top, { font: BOLD });
+  text(doc, formatJapaneseDate(s.dueDate), layout.valueX, top);
+  const bankTop = top + layout.bankOffset;
   text(doc, "振込先：", LEFT, bankTop, { font: BOLD });
-  const lines = bankLines(s.owner, s.client.feeBearer);
-  const width = RIGHT - valueX;
-  lines.forEach((line, i) => {
-    text(doc, line, valueX, bankTop + lineHeight * i, {
-      width,
-      ellipsis: true,
-    });
-  });
-  return bankTop + lineHeight * lines.length;
+  let y = bankTop;
+  for (const fitted of layout.bank) {
+    drawFitted(doc, fitted, layout.valueX, y);
+    y += fitted.height;
+  }
+  return top + layout.height;
+}
+
+/**
+ * 明細表〜支払期限、支払期限〜備考の間隔。ふつうは 12mm・8mm。
+ * 備考を字の大きさの下限まで小さくしても備考欄に入らない場合だけ詰める（spec.md 8.4）
+ */
+export function lowerGaps(doc: Doc, s: InvoiceSnapshot, tableBottom: number) {
+  const paymentHeight = layoutPayment(doc, s).height;
+  const notesHeight = (gaps: { beforePayment: number; beforeNotes: number }) =>
+    PAGE.height -
+    BOTTOM_MARGIN -
+    (tableBottom + gaps.beforePayment + paymentHeight + gaps.beforeNotes);
+  const normal = { beforePayment: mm(12), beforeNotes: mm(8) };
+  if (layoutNotes(doc, s.notes, notesHeight(normal)).fits) return normal;
+  return { beforePayment: mm(6), beforeNotes: mm(4) };
 }
 
 const NOTES_SIZE = 9.5;
