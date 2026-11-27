@@ -9,6 +9,7 @@ import { getDb } from "@/db";
 import { getInvoice } from "@/lib/invoices/repository";
 import { prepareInvoiceOutput } from "@/lib/ledger/repository";
 import { invoicePdfFileName } from "@/lib/pdf/response";
+import { pdfVersion } from "@/lib/pdf/version";
 import { PreviewActions } from "./preview-actions";
 
 async function Preview({
@@ -36,6 +37,7 @@ async function Preview({
 
   const { invoiceNumber } = output.snapshot;
   const pdfHref = `/invoices/${invoice.id}/pdf`;
+  const version = pdfVersion(output.snapshot, output.seal);
   return (
     <div className="space-y-4">
       <p className="text-sm text-zinc-600">
@@ -43,9 +45,10 @@ async function Preview({
         の確定前のPDFです（「SAMPLE」の透かし入り）。確定すると透かしのないPDFになり、台帳に記録されます。
       </p>
       <iframe
-        // 請求番号を振り直したときに表示し直す
-        key={invoiceNumber}
-        src={`${pdfHref}?inline=1&v=${encodeURIComponent(invoiceNumber)}`}
+        // 内容（請求番号・取引先・事業主を含む）が変わったら読み込み直す。
+        // 前に開いた画面は iframe ごと残るため、URL と key の両方を変える
+        key={version}
+        src={`${pdfHref}?inline=1&v=${version}`}
         title="請求書PDFのプレビュー"
         className="h-[75vh] w-full rounded border border-zinc-300"
       />
