@@ -7,5 +7,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
+    // npm run local の専用フォルダ（最新 main の複製）のテストは流さない
+    exclude: ["**/node_modules/**", ".local-run/**"],
   },
 });
