@@ -1,3 +1,8 @@
+import {
+  ClampedText,
+  columnWidth,
+  tableClass,
+} from "@/components/ui/data-table";
 import { RowActions } from "@/components/ui/row-actions";
 import type { OwnerSummary } from "@/lib/owners/repository";
 import {
@@ -24,14 +29,14 @@ export function OwnerTable({
   }
 
   return (
-    <table className="w-full border-collapse text-sm">
+    <table className={tableClass}>
       <thead>
         <tr className="border-b border-zinc-300 text-left">
           <th className="px-3 py-2">屋号</th>
           <th className="px-3 py-2">氏名</th>
-          <th className="px-3 py-2">電話番号</th>
+          <th className={`${columnWidth.phone} px-3 py-2`}>電話番号</th>
           <th className="px-3 py-2">メールアドレス</th>
-          <th className="px-3 py-2">
+          <th className={`${columnWidth.actions} px-3 py-2`}>
             <span className="sr-only">操作</span>
           </th>
         </tr>
@@ -39,10 +44,18 @@ export function OwnerTable({
       <tbody>
         {owners.map((owner) => (
           <tr key={owner.id} className="border-b border-zinc-200">
-            <td className="px-3 py-2">{owner.tradeName}</td>
-            <td className="px-3 py-2">{owner.name}</td>
-            <td className="px-3 py-2">{owner.phone}</td>
-            <td className="px-3 py-2">{owner.email}</td>
+            <td className="px-3 py-2">
+              <ClampedText>{owner.tradeName}</ClampedText>
+            </td>
+            <td className="px-3 py-2">
+              <ClampedText>{owner.name}</ClampedText>
+            </td>
+            <td className="px-3 py-2">
+              <ClampedText>{owner.phone}</ClampedText>
+            </td>
+            <td className="px-3 py-2">
+              <ClampedText>{owner.email}</ClampedText>
+            </td>
             <td className="px-3 py-1">
               <RowActions
                 id={owner.id}

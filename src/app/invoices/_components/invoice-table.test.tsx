@@ -58,3 +58,27 @@ test("0件のときは案内を表示する", () => {
     screen.getByText("アーカイブした請求書はありません。"),
   ).toBeInTheDocument();
 });
+
+test("取引先・件名は 1 行で省略し、請求番号・請求日・合計は切らずに表示する", () => {
+  render(
+    <InvoiceTable
+      archived={false}
+      invoices={[
+        {
+          id: 2,
+          invoiceNumber: "INV-ABC-202611-001",
+          clientName: "サンプル産業株式会社",
+          subject: "Webサイト保守",
+          issueDate: "2026-11-30",
+          total: 134000,
+        },
+      ]}
+    />,
+  );
+  expect(screen.getByRole("table")).toHaveClass("table-fixed");
+  expect(screen.getByText("サンプル産業株式会社")).toHaveClass("truncate");
+  expect(screen.getByText("Webサイト保守")).toHaveClass("truncate");
+  for (const text of ["INV-ABC-202611-001", "2026-11-30", "134,000"]) {
+    expect(screen.getByText(text)).toHaveClass("whitespace-nowrap");
+  }
+});
