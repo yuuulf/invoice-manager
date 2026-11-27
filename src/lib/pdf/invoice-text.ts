@@ -24,12 +24,20 @@ export function formatPeriod(period: Period): string {
   return `（${formatJapaneseDate(period.start)}〜${formatJapaneseDate(period.end)}）`;
 }
 
-/** 宛名の行（8.4 宛名）。担当者名があれば 2 行で「様」、なければ 1 行で「御中」 */
+/**
+ * 宛名の行（8.4 宛名）。担当者名がなければ 1 行で「{会社名} {部署} 御中」、
+ * あれば 2 行で 1 行目「{会社名}」、2 行目「{部署} {担当者名} 様」
+ */
 export function recipientLines(client: InvoiceSnapshot["client"]): string[] {
-  const company = [client.name, client.department].filter(Boolean).join(" ");
-  return client.contactName
-    ? [company, `${client.contactName} 様`]
-    : [`${company} 御中`];
+  if (!client.contactName) {
+    return [
+      `${[client.name, client.department].filter(Boolean).join(" ")} 御中`,
+    ];
+  }
+  return [
+    client.name,
+    `${[client.department, client.contactName].filter(Boolean).join(" ")} 様`,
+  ];
 }
 
 /** "1500001" → "〒150-0001" */
