@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import path from "node:path";
 import PDFDocument from "pdfkit";
 import { formatAmount } from "@/lib/invoices/calc";
@@ -42,12 +43,36 @@ type Options = {
   seal: Buffer | null;
 };
 
-/** フォントを登録した A4 の PDF ドキュメント */
-export function createDocument(title: string) {
+/**
+ * 確定した PDF の権限（spec.md 7.4）。編集・注釈・ページの組み替えを禁止し、閲覧・印刷・コピーは許可する。
+ * 制限を外すためのパスワード（所有者パスワード）は毎回ランダムに作り、どこにも保存しない
+ */
+function protection(): PDFKit.PDFDocumentOptions {
+  return {
+    pdfVersion: "1.7",
+    ownerPassword: randomBytes(32).toString("hex"),
+    permissions: {
+      printing: "highResolution",
+      copying: true,
+      contentAccessibility: true,
+      modifying: false,
+      annotating: false,
+      fillingForms: false,
+      documentAssembly: false,
+    },
+  };
+}
+
+/** フォントを登録した A4 の PDF ドキュメント。protect なら編集できないようにする */
+export function createDocument(
+  title: string,
+  { protect = false }: { protect?: boolean } = {},
+) {
   const doc = new PDFDocument({
     size: "A4",
     margin: 0,
     info: { Title: title },
+    ...(protect ? protection() : {}),
   });
   doc.registerFont(REGULAR, path.join(FONT_DIR, `${REGULAR}.otf`));
   doc.registerFont(BOLD, path.join(FONT_DIR, `${BOLD}.otf`));
@@ -60,7 +85,10 @@ export function renderInvoicePdf(
   snapshot: InvoiceSnapshot,
   { sample, seal }: Options,
 ): Promise<Buffer> {
-  const doc = createDocument(`請求書 ${snapshot.invoiceNumber}`);
+  // 確定した PDF は編集できないようにする。確定前（SAMPLE）は制限しない
+  const doc = createDocument(`請求書 ${snapshot.invoiceNumber}`, {
+    protect: !sample,
+  });
 
   const chunks: Buffer[] = [];
   const done = new Promise<Buffer>((resolve, reject) => {

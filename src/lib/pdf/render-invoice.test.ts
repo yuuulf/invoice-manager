@@ -44,6 +44,48 @@ test("確定前（sample）は透かしの分だけ内容が増える", async ()
   expect(confirmed.toString("latin1")).not.toContain("/ca 0.12");
 });
 
+/** 暗号化辞書の権限フラグ（/P）。なければ null */
+function permissionsOf(pdf: Buffer) {
+  const match = pdf.toString("latin1").match(/\/P (-?\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
+describe("編集の制限（spec.md 7.4）", () => {
+  test("確定した PDF は編集・注釈・ページの組み替えを禁止し、印刷・コピーは許可する", async () => {
+    const pdf = await renderInvoicePdf(sampleSnapshot, {
+      sample: false,
+      seal: png,
+    });
+    expect(pdf.toString("latin1")).toContain("/Encrypt");
+    const p = permissionsOf(pdf)!;
+    expect(p & 0b1000).toBe(0); // 編集
+    expect(p & 0b100000).toBe(0); // 注釈
+    expect(p & 0b100000000).toBe(0); // フォーム入力
+    expect(p & 0b10000000000).toBe(0); // ページの組み替え
+    expect(p & 0b100).not.toBe(0); // 印刷
+    expect(p & 0b100000000000).not.toBe(0); // 高画質印刷
+    expect(p & 0b10000).not.toBe(0); // コピー（データ印を含む）
+  });
+
+  test("確定前（サンプル）は制限しない", async () => {
+    const pdf = await renderInvoicePdf(sampleSnapshot, {
+      sample: true,
+      seal: null,
+    });
+    expect(pdf.toString("latin1")).not.toContain("/Encrypt");
+  });
+
+  test("開くのにパスワードはいらない（閲覧用パスワードなし）", async () => {
+    const doc = createDocument("test", { protect: true });
+    // 所有者パスワードだけを設定し、閲覧用パスワード（userPassword）は設定しない
+    expect(
+      (doc as unknown as { options: { userPassword?: string } }).options
+        .userPassword,
+    ).toBeUndefined();
+    doc.end();
+  });
+});
+
 describe("上段・左の配置（件名が長いとき）", () => {
   const longSubject = {
     ...sampleSnapshot,
