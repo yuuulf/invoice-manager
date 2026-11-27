@@ -53,3 +53,13 @@ test("pathname が不明なとき（プリレンダー時）はどのリンク�
     expect(link).not.toHaveAttribute("aria-current");
   }
 });
+
+test("アプリ名「請求書管理」の左にロゴを表示する（ロゴは読み上げない）", () => {
+  render(<Sidebar />);
+  const title = screen.getByText("請求書管理");
+  const logo = title.querySelector("img");
+  expect(logo).not.toBeNull();
+  expect(logo).toHaveAttribute("alt", "");
+  expect(logo?.getAttribute("src")).toContain("logo.png");
+  expect(title.firstChild).toBe(logo);
+});
