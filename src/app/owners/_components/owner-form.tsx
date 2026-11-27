@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { BACK_PARAM, listHref } from "@/lib/list-query";
+import { preventEnterSubmit } from "@/components/ui/prevent-enter-submit";
 import { FormActions, type FormMode } from "@/components/ui/form-actions";
 import { FormColumns } from "@/components/ui/form-columns";
 import { FormSection } from "@/components/ui/form-section";
@@ -83,6 +84,8 @@ export function OwnerForm({
     <form
       action={formAction}
       onBlur={onBlur}
+      // 保存・作成はボタンだけで行う（入力欄で Enter を押しても送信しない）
+      onKeyDown={preventEnterSubmit}
       noValidate
       className="max-w-4xl space-y-10"
     >

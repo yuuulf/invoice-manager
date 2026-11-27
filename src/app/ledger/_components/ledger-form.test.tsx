@@ -158,3 +158,13 @@ test("送信済みなら送信ファイルを入力でき、右の「開く」�
     Node.DOCUMENT_POSITION_FOLLOWING,
   );
 });
+
+test("送信ファイルの欄で Enter を押しても保存しない", async () => {
+  const action = vi.fn(async () => null);
+  renderForm({ sentOn: "2026-11-30" }, action);
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "送信ファイル" }),
+    "https://drive.google.com/x{Enter}",
+  );
+  expect(action).not.toHaveBeenCalled();
+});

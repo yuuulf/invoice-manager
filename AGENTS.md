@@ -87,6 +87,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - フォーム全体に関わるエラー（例: 必須項目が足りず出力できない）は `FormMessage` で先頭に表示する
 - 取り消せない重要な操作（台帳の削除など）は `TypedConfirmDialog` で決められた文字列（請求書番号など）を入力させてから実行する
 - 請求書の PDF 出力は、保存してプレビュー画面（`/invoices/[id]/preview`、PDF を `?inline=1` で埋め込み表示）を開き、ダウンロード・確定はそこで行う。埋め込みの iframe は前に開いた画面ごと残るため、URL と `key` に PDF の内容から作る `pdfVersion` を付け、内容が変わったら読み込み直させる。確定のように別画面へ移ってからダウンロードさせるときは、`?download=...` 付きの画面へリダイレクトして `AutoDownload` を表示する
+- 入力欄で Enter を押して送信してよいのは一覧の検索（`ListFilter`）だけ。作成・保存・削除などのフォームは `onKeyDown={preventEnterSubmit}` を付け、ボタンでだけ送信する
 - 作成・編集フォームの下部は `FormActions` を使う。入力欄の右端に揃え、左から「キャンセル」「作成」（作成画面）／「保存」（編集画面）の順に並べる。「新規作成」「新規登録」とは書かない
 - 入力エラーは項目の下に表示し、入力欄に `aria-invalid` と `aria-describedby` で関連付ける（`TextField`・`RadioGroup` が対応済み）
 - 入力チェックは項目ごとの関数（`src/lib/<機能>/validation.ts` の `validate{機能}Field(name, values)`）に書き、保存時（`parse...Form`）とフォーカスアウト時（`useBlurValidation` をフォームの `onBlur` に渡す）の両方で使う。ブラウザでも動くよう、サーバー専用のモジュールを import しない

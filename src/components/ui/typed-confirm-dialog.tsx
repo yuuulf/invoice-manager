@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { RowActionResult } from "@/lib/action-result";
 import { Button } from "./button";
 import { FieldError } from "./field-error";
+import { preventEnterSubmit } from "./prevent-enter-submit";
 
 /**
  * 決められた文字列（例: 請求書番号）を入力したときだけ実行できる確認ダイアログ。
@@ -70,6 +71,8 @@ export function TypedConfirmDialog({
         <div className="mt-2 text-sm text-zinc-700">{description}</div>
         <form
           className="mt-4 space-y-4"
+          // 削除はボタンだけで行う（入力欄で Enter を押しても送信しない）
+          onKeyDown={preventEnterSubmit}
           action={async (formData) => {
             setPending(true);
             const result = await action(formData);

@@ -138,3 +138,13 @@ test("一覧の条件（back）を持ち、キャンセルでその条件の一�
     "/clients?q=abc&sort=name",
   );
 });
+
+test("入力欄で Enter を押しても送信しない（作成・保存はボタンで行う）", async () => {
+  const action = vi.fn(async () => null);
+  render(<ClientForm action={action} mode="create" />);
+  await userEvent.type(
+    screen.getByRole("textbox", { name: /会社名/ }),
+    "サンプル産業{Enter}",
+  );
+  expect(action).not.toHaveBeenCalled();
+});
