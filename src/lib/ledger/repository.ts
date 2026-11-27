@@ -13,6 +13,7 @@ import { getInvoice, saveInvoice } from "@/lib/invoices/repository";
 import {
   buildSnapshot,
   checkCompleteness,
+  checkTotal,
   totalsOf,
   type InvoiceSnapshot,
 } from "@/lib/invoices/snapshot";
@@ -35,6 +36,10 @@ function prepare(db: DbOrTx, invoiceId: number): PrepareResult {
     .from(clients)
     .where(eq(clients.id, invoice.clientId!))
     .get()!;
+  const totalErrors = checkTotal(invoice, client.rounding);
+  if (Object.keys(totalErrors).length > 0) {
+    return { ok: false, errors: totalErrors };
+  }
   const owner = db
     .select()
     .from(owners)
