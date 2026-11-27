@@ -1,6 +1,7 @@
 import "server-only";
 import type { Db } from "@/db/create-db";
 import { listClients } from "@/lib/clients/repository";
+import { ownerDisplayName } from "@/lib/owners/labels";
 import { listOwners } from "@/lib/owners/repository";
 import type { ClientOption, OwnerOption } from "./invoice-form";
 
@@ -22,9 +23,7 @@ export function loadFormOptions(db: Db): {
     ),
     owners: listOwners(db, { archived: false }).map((owner) => ({
       id: owner.id,
-      label: owner.tradeName
-        ? `${owner.tradeName}（${owner.name}）`
-        : owner.name,
+      label: ownerDisplayName(owner),
     })),
   };
 }
