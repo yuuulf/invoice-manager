@@ -32,6 +32,8 @@ import type { InvoiceWithItems } from "@/lib/invoices/repository";
 import {
   itemFieldName,
   MAX_ITEMS,
+  NOTES_MAX_LENGTH,
+  NOTES_MAX_LINES,
   SUBJECT_MAX_LENGTH,
   type InvoiceFormValues,
   type ItemFormValues,
@@ -423,7 +425,9 @@ function InvoiceFields({
         <TextAreaField
           label="備考"
           name="notes"
-          hint="PDFで5行まで（長い行は折り返した分も数えます）"
+          // 改行も 1 文字と数えるため、行の区切りの分を足す
+          maxLength={NOTES_MAX_LENGTH + NOTES_MAX_LINES - 1}
+          hint={`${NOTES_MAX_LINES}行・${NOTES_MAX_LENGTH}文字以内（改行は文字数に数えません）`}
           defaultValue={initial.notes}
           error={errors.notes}
           rows={4}

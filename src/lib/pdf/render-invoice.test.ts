@@ -4,7 +4,6 @@ import type { InvoiceSnapshot } from "@/lib/invoices/snapshot";
 import {
   createDocument,
   layoutRecipientBlock,
-  countNoteLines,
   layoutNotes,
   renderInvoicePdf,
 } from "./render-invoice";
@@ -116,14 +115,22 @@ describe("上段・左の配置（件名が長いとき）", () => {
 });
 
 describe("備考欄（spec.md 7.1, 8.4）", () => {
-  const longLine = "あ".repeat(80);
+  test("上限の250文字（改行なし）は、いちばん狭い備考欄（税込・宛名2行・件名3行・手数料の行あり）にも入る", () => {
+    const layout = layoutNotes(
+      createDocument("test"),
+      "あ".repeat(250),
+      mm(27.4),
+    );
+    expect(layout.fits).toBe(true);
+    expect(layout.size).toBeGreaterThanOrEqual(6.5);
+  });
 
-  test("行数は改行と折り返しを数える", () => {
-    expect(countNoteLines(null)).toBe(0);
-    expect(countNoteLines("1行目\n2行目")).toBe(2);
-    // 1 行に収まらない長さは 2 行
-    expect(countNoteLines(longLine)).toBe(2);
-    expect(countNoteLines(`${longLine}\n3行目`)).toBe(3);
+  test("上限（5行・250文字）で各行が折り返す長さでも、いちばん狭い備考欄に入る", () => {
+    // 1 行に収まらない長さの行を 4 行 + 残り
+    const notes = [51, 51, 51, 51, 46].map((n) => "あ".repeat(n)).join("\n");
+    const layout = layoutNotes(createDocument("test"), notes, mm(27.4));
+    expect(layout.fits).toBe(true);
+    expect(layout.size).toBeGreaterThanOrEqual(6.5);
   });
 
   test("欄に入るなら通常の大きさ（9.5pt、行の高さ 1.8 倍）", () => {

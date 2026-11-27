@@ -159,6 +159,29 @@ describe("parseInvoiceForm（作成中の保存）", () => {
     });
   });
 
+  test("備考は250文字まで（改行は数えない）", () => {
+    expect(parseInvoiceForm(form({ notes: "あ".repeat(250) })).ok).toBe(true);
+    expect(
+      parseInvoiceForm(
+        form({ notes: `${"あ".repeat(125)}\n${"あ".repeat(125)}` }),
+      ).ok,
+    ).toBe(true);
+    expect(parseInvoiceForm(form({ notes: "あ".repeat(251) }))).toMatchObject({
+      ok: false,
+      errors: { notes: "備考は250文字以内で入力してください" },
+    });
+  });
+
+  test("備考は5行まで（改行で区切った行。空の行も数える）", () => {
+    expect(parseInvoiceForm(form({ notes: "1\n2\n\n4\n5" })).ok).toBe(true);
+    expect(parseInvoiceForm(form({ notes: "1\n2\n3\n4\n5\n6" }))).toMatchObject(
+      {
+        ok: false,
+        errors: { notes: "備考は5行以内で入力してください" },
+      },
+    );
+  });
+
   test("件名は34文字まで", () => {
     expect(SUBJECT_MAX_LENGTH).toBe(34);
     expect(parseInvoiceForm(form({ subject: "あ".repeat(34) })).ok).toBe(true);

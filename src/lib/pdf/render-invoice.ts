@@ -398,8 +398,6 @@ function drawPayment(doc: Doc, s: InvoiceSnapshot, top: number) {
   return bankTop + lineHeight * lines.length;
 }
 
-/** 備考の行数の上限（PDF で折り返した行を含む。spec.md 7.1） */
-export const NOTES_MAX_LINES = 5;
 const NOTES_SIZE = 9.5;
 const NOTES_PADDING = { x: mm(4), y: mm(3) };
 const NOTES_WIDTH = CONTENT_WIDTH - NOTES_PADDING.x * 2;
@@ -419,17 +417,6 @@ function wrappedNoteLines(doc: Doc, notes: string | null, size: number) {
       ),
     ),
   );
-}
-
-/** 備考を PDF に出したときの行数（折り返しを含む、通常の字の大きさ）。上限のチェックに使う */
-export function countNoteLines(notes: string | null): number {
-  const doc = createDocument("count");
-  const count = wrappedNoteLines(doc, notes, NOTES_SIZE).reduce(
-    (sum, n) => sum + n,
-    0,
-  );
-  doc.end();
-  return count;
 }
 
 /**

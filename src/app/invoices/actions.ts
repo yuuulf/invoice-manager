@@ -10,7 +10,6 @@ import {
   restoreInvoice,
   saveInvoice,
 } from "@/lib/invoices/repository";
-import { notesLinesError } from "@/lib/invoices/notes";
 import { checkCompleteness } from "@/lib/invoices/snapshot";
 import {
   parseInvoiceForm,
@@ -48,11 +47,6 @@ async function submit(
 ): Promise<InvoiceFormState> {
   const parsed = parseInvoiceForm(formData);
   if (!parsed.ok) return { errors: parsed.errors, values: parsed.values };
-  // 備考の行数は PDF のフォントで測るため、ここ（サーバー側）でチェックする
-  const notesError = notesLinesError(parsed.data.notes);
-  if (notesError) {
-    return { errors: { notes: notesError }, values: parsed.values };
-  }
 
   const output = formData.get("intent") === "output";
   if (output) {

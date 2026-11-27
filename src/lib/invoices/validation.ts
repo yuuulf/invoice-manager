@@ -15,6 +15,11 @@ import {
 /** 件名の最大文字数。PDF で件名＋対象期間が 3 行に収まる長さ（spec.md 7.1） */
 export const SUBJECT_MAX_LENGTH = 34;
 
+/** 備考の最大文字数（改行は数えない。spec.md 7.1） */
+export const NOTES_MAX_LENGTH = 250;
+/** 備考の最大行数（改行で区切った行。PDF での折り返しは数えない。spec.md 7.1） */
+export const NOTES_MAX_LINES = 5;
+
 /** 明細の最大行数（spec.md 7.3） */
 export const MAX_ITEMS = 10;
 
@@ -134,6 +139,12 @@ export function parseInvoiceForm(formData: FormData): InvoiceParseResult {
   }
   if ([...values.subject].length > SUBJECT_MAX_LENGTH) {
     errors.subject = `件名は${SUBJECT_MAX_LENGTH}文字以内で入力してください`;
+  }
+  const noteLines = values.notes ? values.notes.split("\n") : [];
+  if (noteLines.length > NOTES_MAX_LINES) {
+    errors.notes = `備考は${NOTES_MAX_LINES}行以内で入力してください`;
+  } else if ([...noteLines.join("")].length > NOTES_MAX_LENGTH) {
+    errors.notes = `備考は${NOTES_MAX_LENGTH}文字以内で入力してください`;
   }
   if (values.dueDate && !isValidDate(values.dueDate)) {
     errors.dueDate = "支払い期限の日付が正しくありません";
