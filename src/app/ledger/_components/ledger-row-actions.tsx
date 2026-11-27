@@ -85,14 +85,14 @@ export function LedgerRowActions({
         description={
           <>
             <p>
-              請求番号{" "}
+              請求書番号{" "}
               <span className="font-mono font-bold">{invoiceNumber}</span>{" "}
               を台帳から削除します。この操作は元に戻せません。
             </p>
           </>
         }
         expected={invoiceNumber}
-        inputLabel="確認のため請求番号を入力してください"
+        inputLabel="確認のため請求書番号を入力してください"
         submitLabel="削除"
         action={deleteLedgerAction}
         hiddenFields={{ id: String(id) }}

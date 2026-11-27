@@ -82,7 +82,7 @@ export function LedgerForm({
               確定した内容
             </h2>
             <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-              <dt className="font-bold">請求番号</dt>
+              <dt className="font-bold">請求書番号</dt>
               <dd className="font-mono">{entry.invoiceNumber}</dd>
               <dt className="font-bold">取引先</dt>
               <dd>{entry.clientName}</dd>

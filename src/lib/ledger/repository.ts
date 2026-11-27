@@ -68,7 +68,7 @@ export type ConfirmResult =
   | { ok: false; errors: InvoiceFormErrors }
   | { ok: false; renumbered: Renumbered };
 
-/** 確定時に請求番号を振り直した内容（spec.md 7.2） */
+/** 確定時に請求書番号を振り直した内容（spec.md 7.2） */
 export type Renumbered = {
   from: string;
   to: string;
@@ -77,7 +77,7 @@ export type Renumbered = {
 };
 
 /**
- * 請求番号が台帳から見て正しい連番（spec.md 7.2）でなければ振り直し、その内容を返す。
+ * 請求書番号が台帳から見て正しい連番（spec.md 7.2）でなければ振り直し、その内容を返す。
  * 正しければ null
  */
 function renumberIfNeeded(
@@ -109,7 +109,7 @@ export type CheckNumberResult =
   | { ok: false; renumbered: Renumbered };
 
 /**
- * 発行の前に請求番号をチェックし、必要なら振り直す（spec.md 7.2）。
+ * 発行の前に請求書番号をチェックし、必要なら振り直す（spec.md 7.2）。
  * 「発行」を押した直後、確認ダイアログを出す前に使う（spec.md 7.4）。
  */
 export function checkInvoiceNumber(
@@ -126,7 +126,7 @@ export function checkInvoiceNumber(
 
 /**
  * 請求書を確定して台帳に記録し、元の請求書を一覧から消す（spec.md 7.4）。
- * 請求番号が台帳から見て正しい連番でなければ、振り直して確定を止める（spec.md 7.2）。
+ * 請求書番号が台帳から見て正しい連番でなければ、振り直して確定を止める（spec.md 7.2）。
  */
 export function confirmInvoice(db: Db, invoiceId: number): ConfirmResult {
   return db.transaction((tx) => {
@@ -259,7 +259,7 @@ export function getLedgerOutput(db: Db, id: number): OutputData | undefined {
 }
 
 /**
- * 台帳を削除する。確認のため請求番号の入力が一致している必要がある（spec.md 4）。
+ * 台帳を削除する。確認のため請求書番号の入力が一致している必要がある（spec.md 4）。
  * 送信済みの台帳は削除できない（spec.md 7.6）
  */
 export function deleteLedgerEntry(
@@ -278,7 +278,7 @@ export function deleteLedgerEntry(
   if (!entry) return { error: "台帳が見つかりません" };
   if (entry.sentOn) return { error: LEDGER_SENT_CANNOT_DELETE };
   if (entry.invoiceNumber !== typedInvoiceNumber.trim()) {
-    return { error: "請求番号が一致しません" };
+    return { error: "請求書番号が一致しません" };
   }
   db.delete(ledgerEntries).where(eq(ledgerEntries.id, id)).run();
 }

@@ -15,6 +15,16 @@ export function formatJapaneseDate(date: string): string {
   return `${year}年${month}月${day}日`;
 }
 
+/** 右上の請求日・請求書番号の 2 行（8.4 請求日・請求書番号） */
+export function metaLines(
+  s: Pick<InvoiceSnapshot, "issueDate" | "invoiceNumber">,
+): [string, string] {
+  return [
+    `請求日：${formatJapaneseDate(s.issueDate)}`,
+    `請求書番号：${s.invoiceNumber}`,
+  ];
+}
+
 /** 件名の後ろに付ける対象期間（8.4 件名） */
 export function formatPeriod(period: Period): string {
   if (period.type === "month") {

@@ -34,7 +34,7 @@ test("確定した内容は表示だけで、入力欄にしない", () => {
   renderForm();
   const terms = screen.getAllByRole("term").map((dt) => dt.textContent);
   expect(terms).toEqual([
-    "請求番号",
+    "請求書番号",
     "取引先",
     "事業主",
     "件名",

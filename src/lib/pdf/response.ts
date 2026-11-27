@@ -1,6 +1,6 @@
 /**
  * 出力ファイル名（spec.md 7.5）。
- * 確定した PDF は「請求書_{請求番号}.pdf」、確定前（SAMPLE）は「サンプル_請求書_{請求番号}.pdf」
+ * 確定した PDF は「請求書_{請求書番号}.pdf」、確定前（SAMPLE）は「サンプル_請求書_{請求書番号}.pdf」
  */
 export function invoicePdfFileName(
   invoiceNumber: string,

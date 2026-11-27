@@ -102,7 +102,7 @@ function notIssuedMessage(
 }
 
 /**
- * プレビュー画面で「発行」を押した直後、確認ダイアログの前に請求番号をチェックする（spec.md 7.2, 7.4）。
+ * プレビュー画面で「発行」を押した直後、確認ダイアログの前に請求書番号をチェックする（spec.md 7.2, 7.4）。
  * 振り直した場合はプレビューを表示し直し、理由のメッセージを返す。問題なければ null
  */
 export async function checkInvoiceNumberAction(
@@ -116,7 +116,7 @@ export async function checkInvoiceNumberAction(
 
 /**
  * プレビュー画面の「発行」。台帳に記録して台帳画面に移り、確定した PDF をダウンロードする。
- * 請求番号を振り直した場合や必須項目が足りない場合は、確定せずにメッセージを返す（spec.md 7.2, 7.4）。
+ * 請求書番号を振り直した場合や必須項目が足りない場合は、確定せずにメッセージを返す（spec.md 7.2, 7.4）。
  */
 export async function confirmInvoiceAction(
   _prev: ConfirmState,

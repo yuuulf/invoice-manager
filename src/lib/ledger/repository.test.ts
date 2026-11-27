@@ -142,7 +142,7 @@ describe("確定（spec.md 7.4）", () => {
   });
 });
 
-describe("請求番号の連番（spec.md 7.2）", () => {
+describe("請求書番号の連番（spec.md 7.2）", () => {
   test("確定済みの番号の次を採番する", () => {
     confirm(createInvoice());
     const second = createInvoice();
@@ -262,10 +262,10 @@ describe("請求番号の連番（spec.md 7.2）", () => {
 });
 
 describe("台帳の削除", () => {
-  test("請求番号の入力が一致したときだけ削除する", () => {
+  test("請求書番号の入力が一致したときだけ削除する", () => {
     const ledgerId = confirm(createInvoice());
     expect(deleteLedgerEntry(db, ledgerId, "INV-ABC-202611-002")).toEqual({
-      error: "請求番号が一致しません",
+      error: "請求書番号が一致しません",
     });
     expect(listLedger(db)).toHaveLength(1);
 

@@ -22,7 +22,7 @@ const entry = {
   memo: null,
 };
 
-test("請求番号・取引先・件名・請求日・合計・状態を表示する", () => {
+test("請求書番号・取引先・件名・請求日・合計・状態を表示する", () => {
   render(<LedgerTable entries={[entry]} />);
   const row = screen.getAllByRole("row")[1];
   for (const text of [
@@ -55,7 +55,7 @@ test("未入金は送信日を、入金済みは入金日を状態の横に出�
   expect(within(sent).getByText("送信日").parentElement).toHaveTextContent(
     "送信日 2026-12-02",
   );
-  expect(within(paid).getByText("入金済み")).toHaveAttribute(
+  expect(within(paid).getByText("入金済")).toHaveAttribute(
     "data-tone",
     "success",
   );
@@ -138,7 +138,7 @@ test("送信済みの台帳は削除を押せない（spec.md 7.6）", async () 
   expect(screen.getByRole("menuitem", { name: /削除/ })).toBeDisabled();
 });
 
-test("メニューに PDF出力・請求書にコピー・削除があり、削除は請求番号の入力で確認する", async () => {
+test("メニューに PDF出力・請求書にコピー・削除があり、削除は請求書番号の入力で確認する", async () => {
   render(<LedgerTable entries={[entry]} />);
   await userEvent.click(screen.getByRole("button", { name: "その他の操作" }));
   const items = within(screen.getByRole("menu")).getAllByRole("menuitem");

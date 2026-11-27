@@ -276,7 +276,7 @@ function InvoiceFields({
       <FormColumns>
         <FormSection title="基本情報">
           <div>
-            <p className="text-sm font-bold">請求番号</p>
+            <p className="text-sm font-bold">請求書番号</p>
             <p className="mt-1 font-mono">
               {invoiceNumber ?? <span className="text-zinc-500">未採番</span>}
             </p>

@@ -8,7 +8,7 @@ export type LedgerStatus = (typeof ledgerStatuses)[number];
 export const ledgerStatusLabels: Record<LedgerStatus, string> = {
   unsent: "未送信",
   sent: "未入金",
-  paid: "入金済み",
+  paid: "入金済",
 };
 
 /** 編集画面の選択肢の表示名 */

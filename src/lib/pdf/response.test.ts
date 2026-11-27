@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { invoicePdfFileName, pdfResponse } from "./response";
 
-test("ファイル名は 請求書_{請求番号}.pdf", () => {
+test("ファイル名は 請求書_{請求書番号}.pdf", () => {
   expect(invoicePdfFileName("INV-ABC-202611-001")).toBe(
     "請求書_INV-ABC-202611-001.pdf",
   );

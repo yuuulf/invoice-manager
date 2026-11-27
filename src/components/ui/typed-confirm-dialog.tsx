@@ -6,7 +6,7 @@ import { Button } from "./button";
 import { FieldError } from "./field-error";
 
 /**
- * 決められた文字列（例: 請求番号）を入力したときだけ実行できる確認ダイアログ。
+ * 決められた文字列（例: 請求書番号）を入力したときだけ実行できる確認ダイアログ。
  * 取り消せない重要な操作（台帳の削除など。spec.md 4）に使う。
  */
 export function TypedConfirmDialog({
