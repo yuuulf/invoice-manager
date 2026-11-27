@@ -5,15 +5,26 @@ import {
   type TaxMode,
 } from "@/db/schema";
 import { getText, isOneOf } from "@/lib/form-data";
+import { exceeds, maxLengthMessage } from "@/lib/text-rules";
 import {
+  AMOUNT_MAX,
   isValidDate,
   isValidMonth,
   parseQuantity,
   parseUnitPrice,
+  QUANTITY_SCALE,
 } from "./calc";
 
 /** 件名の最大文字数。PDF で件名＋対象期間が 3 行に収まる長さ（spec.md 7.1） */
 export const SUBJECT_MAX_LENGTH = 34;
+
+/** 明細の文字数の上限（spec.md 7.3）。数量は小数点も 1 文字、単価は桁数 */
+export const ITEM_MAX_LENGTHS = {
+  description: 60,
+  quantity: 10,
+  unit: 5,
+  unitPrice: 10,
+} as const;
 
 /** 備考の 1 行の文字数（全角換算。spec.md 7.1）。これを超えると折り返す */
 export const NOTES_LINE_WIDTH = 50;
@@ -111,7 +122,8 @@ export type InvoiceParseResult =
 export const itemFieldName = (position: number, key: keyof ItemFormValues) =>
   `items.${position}.${key}`;
 
-function readValues(formData: FormData): InvoiceFormValues {
+/** FormData から請求書フォームの値を読む */
+export function readInvoiceValues(formData: FormData): InvoiceFormValues {
   const text = (key: string) => getText(formData, key);
   return {
     clientId: text("clientId"),
@@ -147,61 +159,155 @@ function parseId(value: string) {
   return /^\d+$/.test(value) ? Number(value) : null;
 }
 
+/** 金額（数量 × 単価）が上限を超えたときのメッセージ */
+export const AMOUNT_TOO_LARGE =
+  "金額（数量×単価）は10桁（9,999,999,999）以内にしてください";
+/** 合計が上限を超えたときのメッセージ */
+export const TOTAL_TOO_LARGE = "合計は10桁（9,999,999,999）以内にしてください";
+
+const ITEM_FIELD_PATTERN =
+  /^items\.(\d+)\.(description|quantity|unit|unitPrice)$/;
+
+/**
+ * 請求書フォームの 1 項目をチェックする（spec.md 7.1, 7.3）。保存時とフォーカスアウト時に使う。
+ * 入力済みの値の形式・文字数だけを見て、未入力（必須）はチェックしない（必須は PDF 出力時）。
+ * 問題なければ undefined、チェックしない項目なら null
+ */
+export function validateInvoiceField(
+  name: string,
+  values: InvoiceFormValues,
+): string | undefined | null {
+  const item = ITEM_FIELD_PATTERN.exec(name);
+  if (item) {
+    const key = item[2] as keyof ItemFormValues;
+    const value = values.items[Number(item[1])]?.[key] ?? "";
+    if (!value) return undefined;
+    switch (key) {
+      case "description":
+        return exceeds(value, ITEM_MAX_LENGTHS.description)
+          ? maxLengthMessage("内容", ITEM_MAX_LENGTHS.description)
+          : undefined;
+      case "unit":
+        return exceeds(value, ITEM_MAX_LENGTHS.unit)
+          ? maxLengthMessage("単位", ITEM_MAX_LENGTHS.unit)
+          : undefined;
+      case "quantity":
+        if (exceeds(value, ITEM_MAX_LENGTHS.quantity))
+          return `数量は${ITEM_MAX_LENGTHS.quantity}文字以内（小数点を含む）で入力してください`;
+        return parseQuantity(value) === null
+          ? "数量は0以上の数値（小数第2位まで）で入力してください"
+          : undefined;
+      case "unitPrice": {
+        const unitPrice = parseUnitPrice(value);
+        if (unitPrice === null) return "単価は0以上の整数で入力してください";
+        if (exceeds(value, ITEM_MAX_LENGTHS.unitPrice))
+          return `単価は${ITEM_MAX_LENGTHS.unitPrice}桁以内で入力してください`;
+        // 金額（数量 × 単価）も 10 桁まで。端数処理によらず超えないよう、切り上げで見る
+        const quantity = parseQuantity(values.items[Number(item[1])].quantity);
+        return quantity !== null &&
+          Math.ceil((quantity * unitPrice) / QUANTITY_SCALE) > AMOUNT_MAX
+          ? AMOUNT_TOO_LARGE
+          : undefined;
+      }
+    }
+  }
+
+  const periodType = values.periodType;
+  switch (name) {
+    case "clientId":
+      return values.clientId && parseId(values.clientId) === null
+        ? "取引先を選択し直してください"
+        : undefined;
+    case "ownerId":
+      return values.ownerId && parseId(values.ownerId) === null
+        ? "事業主を選択し直してください"
+        : undefined;
+    case "issueDate":
+      return values.issueDate && !isValidDate(values.issueDate)
+        ? "請求日の日付が正しくありません"
+        : undefined;
+    case "subject":
+      return exceeds(values.subject, SUBJECT_MAX_LENGTH)
+        ? maxLengthMessage("件名", SUBJECT_MAX_LENGTH)
+        : undefined;
+    case "notes":
+      return countNoteLines(values.notes) > NOTES_MAX_LINES
+        ? `備考は1行${NOTES_LINE_WIDTH}文字で折り返して${NOTES_MAX_LINES}行以内で入力してください`
+        : undefined;
+    case "dueDate":
+      return values.dueDate && !isValidDate(values.dueDate)
+        ? "支払い期限の日付が正しくありません"
+        : undefined;
+    case "periodType":
+      return periodType && !isOneOf(periodTypes, periodType)
+        ? "対象期間の種類を選択してください"
+        : undefined;
+    case "periodMonth":
+      return periodType === "month" &&
+        values.periodMonth &&
+        !isValidMonth(values.periodMonth)
+        ? "対象期間の年月が正しくありません"
+        : undefined;
+    case "periodStart":
+      return periodType === "range" &&
+        values.periodStart &&
+        !isValidDate(values.periodStart)
+        ? "対象期間の開始日が正しくありません"
+        : undefined;
+    case "periodEnd":
+      if (periodType !== "range" || !values.periodEnd) return undefined;
+      if (!isValidDate(values.periodEnd))
+        return "対象期間の終了日が正しくありません";
+      return isValidDate(values.periodStart) &&
+        values.periodStart > values.periodEnd
+        ? "対象期間の終了日は開始日以降にしてください"
+        : undefined;
+    case "taxMode":
+      return values.taxMode && !isOneOf(taxModes, values.taxMode)
+        ? "消費税を選択してください"
+        : undefined;
+    default:
+      return null;
+  }
+}
+
+const FIELD_NAMES = [
+  "clientId",
+  "ownerId",
+  "issueDate",
+  "subject",
+  "periodType",
+  "periodMonth",
+  "periodStart",
+  "periodEnd",
+  "dueDate",
+  "notes",
+  "taxMode",
+] as const;
+
 /**
  * 作成中の請求書フォームを検証する。入力済みの値の形式だけをチェックし、
  * 必須項目がそろっているかはチェックしない（spec.md 7.1）。
  */
 export function parseInvoiceForm(formData: FormData): InvoiceParseResult {
-  const values = readValues(formData);
+  const values = readInvoiceValues(formData);
   const errors: InvoiceFormErrors = {};
-
-  if (values.clientId && parseId(values.clientId) === null) {
-    errors.clientId = "取引先を選択し直してください";
-  }
-  if (values.ownerId && parseId(values.ownerId) === null) {
-    errors.ownerId = "事業主を選択し直してください";
-  }
-  if (values.issueDate && !isValidDate(values.issueDate)) {
-    errors.issueDate = "請求日の日付が正しくありません";
-  }
-  if ([...values.subject].length > SUBJECT_MAX_LENGTH) {
-    errors.subject = `件名は${SUBJECT_MAX_LENGTH}文字以内で入力してください`;
-  }
-  if (countNoteLines(values.notes) > NOTES_MAX_LINES) {
-    errors.notes = `備考は1行${NOTES_LINE_WIDTH}文字で折り返して${NOTES_MAX_LINES}行以内で入力してください`;
-  }
-  if (values.dueDate && !isValidDate(values.dueDate)) {
-    errors.dueDate = "支払い期限の日付が正しくありません";
+  const fieldNames = [
+    ...FIELD_NAMES,
+    ...values.items.flatMap((_, position) =>
+      (["description", "quantity", "unit", "unitPrice"] as const).map((key) =>
+        itemFieldName(position, key),
+      ),
+    ),
+  ];
+  for (const name of fieldNames) {
+    const error = validateInvoiceField(name, values);
+    if (error) errors[name] = error;
   }
 
   const periodType = isOneOf(periodTypes, values.periodType)
     ? values.periodType
     : null;
-  if (values.periodType && !periodType) {
-    errors.periodType = "対象期間の種類を選択してください";
-  }
-  if (periodType === "month") {
-    if (values.periodMonth && !isValidMonth(values.periodMonth)) {
-      errors.periodMonth = "対象期間の年月が正しくありません";
-    }
-  }
-  if (periodType === "range") {
-    if (values.periodStart && !isValidDate(values.periodStart)) {
-      errors.periodStart = "対象期間の開始日が正しくありません";
-    }
-    if (values.periodEnd && !isValidDate(values.periodEnd)) {
-      errors.periodEnd = "対象期間の終了日が正しくありません";
-    }
-    if (
-      !errors.periodStart &&
-      !errors.periodEnd &&
-      values.periodStart &&
-      values.periodEnd &&
-      values.periodStart > values.periodEnd
-    ) {
-      errors.periodEnd = "対象期間の終了日は開始日以降にしてください";
-    }
-  }
 
   // 未送信なら税抜（spec.md 7.1 のデフォルト）
   const taxMode: TaxMode | null = !values.taxMode
@@ -209,20 +315,11 @@ export function parseInvoiceForm(formData: FormData): InvoiceParseResult {
     : isOneOf(taxModes, values.taxMode)
       ? values.taxMode
       : null;
-  if (taxMode === null) errors.taxMode = "消費税を選択してください";
 
   const items: InvoiceItemInput[] = [];
   values.items.forEach((item, position) => {
     const quantity = item.quantity ? parseQuantity(item.quantity) : null;
     const unitPrice = item.unitPrice ? parseUnitPrice(item.unitPrice) : null;
-    if (item.quantity && quantity === null) {
-      errors[itemFieldName(position, "quantity")] =
-        "数量は0以上の数値（小数第2位まで）で入力してください";
-    }
-    if (item.unitPrice && unitPrice === null) {
-      errors[itemFieldName(position, "unitPrice")] =
-        "単価は0以上の整数で入力してください";
-    }
     if (item.description || item.quantity || item.unit || item.unitPrice) {
       items.push({
         position,

@@ -66,14 +66,14 @@ describe("宛名", () => {
       "サンプル産業株式会社 経理部 御中",
     ]);
   });
-  test("担当者名があれば2行で様", () => {
+  test("担当者名があれば2行で様。部署は2行目の担当者名の前", () => {
     expect(
       recipientLines({
         ...client,
         department: "経理部",
         contactName: "山田 花子",
       }),
-    ).toEqual(["サンプル産業株式会社 経理部", "山田 花子 様"]);
+    ).toEqual(["サンプル産業株式会社", "経理部 山田 花子 様"]);
     expect(recipientLines({ ...client, contactName: "山田 花子" })).toEqual([
       "サンプル産業株式会社",
       "山田 花子 様",

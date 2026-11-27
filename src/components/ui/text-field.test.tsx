@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
 import { TextField } from "./text-field";
 
@@ -22,4 +22,17 @@ test("エラーがなければ入力欄は有効", () => {
   render(<TextField label="部署" name="department" />);
   expect(screen.getByRole("textbox", { name: "部署" })).toBeValid();
   expect(screen.queryByText("必須")).not.toBeInTheDocument();
+});
+
+test("入力制限: 入力のたびに値を変換する", () => {
+  render(
+    <TextField
+      label="郵便番号"
+      name="postalCode"
+      inputFilter={(v) => v.replace(/\D/g, "").slice(0, 7)}
+    />,
+  );
+  const input = screen.getByRole("textbox", { name: "郵便番号" });
+  fireEvent.input(input, { target: { value: "150-00012" } });
+  expect(input).toHaveValue("1500001");
 });

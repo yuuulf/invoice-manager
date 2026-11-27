@@ -56,6 +56,9 @@ export function calcAmount(
   );
 }
 
+/** 金額・合計の上限（10 桁。spec.md 7.3） */
+export const AMOUNT_MAX = 9_999_999_999;
+
 /** 消費税率（%）（spec.md 7.3） */
 export const TAX_RATE = 10;
 

@@ -10,7 +10,8 @@ import {
   restoreInvoice,
   saveInvoice,
 } from "@/lib/invoices/repository";
-import { checkCompleteness } from "@/lib/invoices/snapshot";
+import { getClient } from "@/lib/clients/repository";
+import { checkCompleteness, checkTotal } from "@/lib/invoices/snapshot";
 import {
   parseInvoiceForm,
   type InvoiceFormErrors,
@@ -50,7 +51,13 @@ async function submit(
 
   const output = formData.get("intent") === "output";
   if (output) {
-    const errors = checkCompleteness(parsed.data);
+    const client = parsed.data.clientId
+      ? getClient(getDb(), parsed.data.clientId)
+      : undefined;
+    const errors = {
+      ...checkCompleteness(parsed.data),
+      ...(client ? checkTotal(parsed.data, client.rounding) : {}),
+    };
     if (Object.keys(errors).length > 0) {
       return {
         errors,
@@ -89,9 +96,8 @@ const INCOMPLETE_MESSAGE =
 function notIssuedMessage(
   result: Exclude<CheckNumberResult | ConfirmResult, { ok: true }>,
 ) {
-  return "renumbered" in result
-    ? renumberedMessage(result.renumbered)
-    : INCOMPLETE_MESSAGE;
+  if ("renumbered" in result) return renumberedMessage(result.renumbered);
+  return result.errors.total ?? INCOMPLETE_MESSAGE;
 }
 
 /**

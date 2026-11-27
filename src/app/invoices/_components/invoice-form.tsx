@@ -10,11 +10,13 @@ import { RadioGroup } from "@/components/ui/radio-group";
 import { SelectField } from "@/components/ui/select-field";
 import { TextAreaField } from "@/components/ui/text-area-field";
 import { TextField } from "@/components/ui/text-field";
+import { useBlurValidation } from "@/components/ui/use-blur-validation";
 import { taxModes, type Client, type TaxMode } from "@/db/schema";
 import {
   basisMonthOf,
   calcAmount,
   calcDueDate,
+  AMOUNT_MAX,
   calcTotals,
   formatAmount,
   formatQuantity,
@@ -34,7 +36,10 @@ import {
   MAX_ITEMS,
   NOTES_LINE_WIDTH,
   NOTES_MAX_LINES,
+  readInvoiceValues,
   SUBJECT_MAX_LENGTH,
+  TOTAL_TOO_LARGE,
+  validateInvoiceField,
   type InvoiceFormValues,
   type ItemFormValues,
 } from "@/lib/invoices/validation";
@@ -158,16 +163,26 @@ export function InvoiceForm({
   const [state, formAction, pending] = useActionState(action, null);
   const values =
     state?.values ?? (invoice ? valuesOf(invoice) : newInvoiceValues(today));
+  const { errors, onBlur } = useBlurValidation(
+    state,
+    state?.errors ?? {},
+    (name, formData) => validateInvoiceField(name, readInvoiceValues(formData)),
+  );
 
   return (
-    <form action={formAction} noValidate className="max-w-4xl space-y-10">
+    <form
+      action={formAction}
+      onBlur={onBlur}
+      noValidate
+      className="max-w-4xl space-y-10"
+    >
       {invoice && <input type="hidden" name="id" value={invoice.id} />}
       <FormMessage message={state?.message} />
       {/* 送信結果が返ったら、返ってきた値で入力欄を作り直す */}
       <InvoiceFields
         key={JSON.stringify(state)}
         initial={values}
-        errors={state?.errors ?? {}}
+        errors={errors}
         invoiceNumber={invoice?.invoiceNumber ?? null}
         clients={clients}
         owners={owners}
@@ -208,7 +223,7 @@ function InvoiceFields({
   owners,
 }: {
   initial: InvoiceFormValues;
-  errors: Record<string, string>;
+  errors: Record<string, string | undefined>;
   invoiceNumber: string | null;
   clients: ClientOption[];
   owners: OwnerOption[];
@@ -303,7 +318,6 @@ function InvoiceFields({
           label="件名"
           name="subject"
           required
-          maxLength={SUBJECT_MAX_LENGTH}
           hint={`${SUBJECT_MAX_LENGTH}文字以内`}
           defaultValue={initial.subject}
           error={errors.subject}
@@ -456,7 +470,7 @@ function ItemsTable({
   amounts: (number | null)[];
   /** 取引先が未選択なら null */
   totals: Totals | null;
-  errors: Record<string, string>;
+  errors: Record<string, string | undefined>;
   onChange: (
     position: number,
     key: keyof ItemFormValues,
@@ -552,6 +566,12 @@ function ItemsTable({
           <TotalRow label="合計" value={totals?.total ?? null} bold />
         </tfoot>
       </table>
+      <FieldError
+        id="total-error"
+        message={
+          totals && totals.total > AMOUNT_MAX ? TOTAL_TOO_LARGE : errors.total
+        }
+      />
       <p className="mt-2 text-sm text-zinc-500">
         {rounding
           ? `金額は数量×単価を取引先の端数処理（${roundingLabels[rounding]}）で計算します。${totals?.tax != null ? `消費税相当額も小計の${TAX_RATE}%を同じ端数処理で計算します。` : ""}最大10行です。`

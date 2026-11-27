@@ -84,11 +84,11 @@ test("送信すると入力内容をアクションに渡し、返ってきた�
 
   await userEvent.type(
     screen.getByRole("textbox", { name: /郵便番号/ }),
-    "150-001",
+    "150001",
   );
   await userEvent.click(screen.getByRole("button", { name: "作成" }));
 
-  expect(action.mock.calls[0][1].get("postalCode")).toBe("150-001");
+  expect(action.mock.calls[0][1].get("postalCode")).toBe("150001");
   expect(action.mock.calls[0][1].get("accountType")).toBe("ordinary");
   expect(
     await screen.findByText(
@@ -96,6 +96,47 @@ test("送信すると入力内容をアクションに渡し、返ってきた�
     ),
   ).toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: /郵便番号/ })).toHaveValue(
-    "150-001",
+    "150001",
+  );
+});
+
+test("郵便番号・銀行番号・支店番号・口座番号は数字だけを決まった桁数まで入力できる", async () => {
+  render(<OwnerForm action={vi.fn()} mode="create" />);
+  const cases: [RegExp, string, string][] = [
+    [/郵便番号/, "150-00012", "1500001"],
+    [/銀行番号/, "０１２３4", "0123"],
+    [/支店番号/, "45a67", "456"],
+    [/口座番号/, "1234-5678", "1234567"],
+  ];
+  for (const [name, typed, expected] of cases) {
+    const input = screen.getByRole("textbox", { name });
+    await userEvent.type(input, typed);
+    expect(input).toHaveValue(expected);
+  }
+});
+
+test("文字数の上限を超えても入力でき、フォーカスアウトでエラーを表示する", async () => {
+  render(<OwnerForm action={vi.fn()} mode="create" />);
+  const name = screen.getByRole("textbox", { name: /氏名/ });
+  expect(name).not.toHaveAttribute("maxLength");
+  const holder = screen.getByRole("textbox", { name: /口座名義/ });
+  await userEvent.type(holder, "ア".repeat(51));
+  expect(holder).toHaveValue("ア".repeat(51));
+  await userEvent.tab();
+  expect(holder).toHaveAccessibleDescription(
+    "口座名義は50文字以内で入力してください",
+  );
+  await userEvent.click(name);
+  await userEvent.tab();
+  expect(name).toHaveAccessibleDescription("氏名を入力してください");
+  await userEvent.type(name, "山田 太郎");
+  await userEvent.tab();
+  expect(name).toBeValid();
+
+  const email = screen.getByRole("textbox", { name: /メールアドレス/ });
+  await userEvent.type(email, "taro@");
+  await userEvent.tab();
+  expect(email).toHaveAccessibleDescription(
+    "メールアドレスの形式が正しくありません",
   );
 });

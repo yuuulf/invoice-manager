@@ -3,6 +3,9 @@ import { describe, expect, test } from "vitest";
 import type { InvoiceSnapshot } from "@/lib/invoices/snapshot";
 import {
   createDocument,
+  fitCell,
+  layoutOwnerBlock,
+  lowerGaps,
   layoutRecipientBlock,
   layoutNotes,
   renderInvoicePdf,
@@ -159,5 +162,98 @@ describe("備考欄（spec.md 7.1, 8.4）", () => {
     expect(layoutNotes(createDocument("test"), "1\n2", mm(27.4)).size).toBe(
       9.5,
     );
+  });
+});
+
+describe("入りきらない文字（spec.md 8.3）", () => {
+  const z = (n: number) => "漢".repeat(n);
+  const doc = createDocument("test");
+
+  test("明細のマスは、上限の長さでも字を小さく・折り返して行の高さに収める", () => {
+    const cases: [string, number][] = [
+      [z(60), mm(178 - 76)], // 内容 60 文字
+      [`9999999.99 ${z(5)}`, mm(24)], // 数量 10 文字 + 単位 5 文字
+      ["9,999,999,999", mm(24)], // 単価 10 桁
+      ["9,999,999,999", mm(28)], // 金額 10 桁
+    ];
+    for (const [value, width] of cases) {
+      const f = fitCell(doc, value, width);
+      expect(f.lines.join("").replace(/\s/g, "")).toBe(
+        value.replace(/\s/g, ""),
+      );
+      expect(f.size).toBeGreaterThanOrEqual(7);
+      expect(f.height).toBeLessThanOrEqual(mm(7.2) - mm(1));
+    }
+  });
+
+  test("ふつうの長さなら明細は 9.5pt のまま", () => {
+    expect(fitCell(doc, "Webサイト保守（11月分）", mm(102)).size).toBe(9.5);
+  });
+
+  test("宛名が長いときは 9pt まで小さくし、それでも入らなければ折り返す", () => {
+    const layout = layoutRecipientBlock(doc, {
+      ...sampleSnapshot,
+      client: {
+        ...sampleSnapshot.client,
+        name: z(40),
+        department: z(20),
+        contactName: z(20),
+      },
+    });
+    const [company, contact] = layout.recipient;
+    expect(company.size).toBe(9);
+    expect(company.lines.length).toBeGreaterThan(1);
+    expect(contact.size).toBeGreaterThanOrEqual(9);
+    // 宛名が下がった分、件名も下がる
+    expect(layout.subjectY).toBeGreaterThan(
+      layoutRecipientBlock(doc, sampleSnapshot).subjectY,
+    );
+  });
+
+  test("事業主情報: ふつうは今の位置、長い項目があると左に広げ、データ印と重ねない", () => {
+    const normal = layoutOwnerBlock(doc, sampleSnapshot, true);
+    expect(normal.x).toBeCloseTo(mm(144));
+    expect(normal.entries.every((e) => e.fitted.size >= 9)).toBe(true);
+
+    const long = layoutOwnerBlock(
+      doc,
+      {
+        ...sampleSnapshot,
+        owner: {
+          ...sampleSnapshot.owner,
+          tradeName: z(20),
+          name: z(20),
+          address1: z(20),
+          address2: z(20),
+          email: `${"a".repeat(64)}@${"b".repeat(176)}.example.com`,
+        },
+      },
+      true,
+    );
+    expect(long.x).toBeLessThan(mm(144));
+    expect(long.x).toBeGreaterThanOrEqual(mm(118));
+    for (const { fitted, y } of long.entries) {
+      expect(fitted.size).toBeGreaterThanOrEqual(7);
+      // データ印（右端から 20mm、上端 45〜65mm）の横の行は、データ印の手前まで
+      if (y < mm(65)) {
+        expect(long.x + fitted.width).toBeLessThanOrEqual(mm(194 - 22) + 0.01);
+      }
+    }
+    expect(long.bottom).toBeGreaterThan(normal.bottom);
+  });
+
+  test("下段の間隔はふつう 12mm・8mm。備考が下限の大きさでも入らないときだけ詰める", () => {
+    expect(lowerGaps(doc, sampleSnapshot, mm(194))).toEqual({
+      beforePayment: mm(12),
+      beforeNotes: mm(8),
+    });
+    const crowded = {
+      ...sampleSnapshot,
+      notes: Array.from({ length: 5 }, () => z(50)).join("\n"),
+    };
+    expect(lowerGaps(doc, crowded, mm(232))).toEqual({
+      beforePayment: mm(6),
+      beforeNotes: mm(4),
+    });
   });
 });

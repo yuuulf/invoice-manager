@@ -2,9 +2,11 @@
 
 import { useActionState } from "react";
 import { FieldError } from "@/components/ui/field-error";
+import { inputFilterHandlers } from "@/components/ui/input-filter";
 import { FormActions, type FormMode } from "@/components/ui/form-actions";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { TextField } from "@/components/ui/text-field";
+import { useBlurValidation } from "@/components/ui/use-blur-validation";
 import {
   feeBearers,
   paymentTermTypes,
@@ -16,7 +18,12 @@ import {
   paymentTermLabels,
   roundingLabels,
 } from "@/lib/clients/labels";
-import type { ClientFormValues } from "@/lib/clients/validation";
+import {
+  readClientValues,
+  validateClientField,
+  type ClientFormValues,
+} from "@/lib/clients/validation";
+import { digitsOnly, upperAlphanumericOnly } from "@/lib/text-rules";
 import type { ClientFormState } from "../actions";
 
 type Action = (
@@ -60,10 +67,19 @@ export function ClientForm({
 }) {
   const [state, formAction, pending] = useActionState(action, null);
   const values = state?.values ?? (client ? valuesOf(client) : newClientValues);
-  const errors = state?.errors ?? {};
+  const { errors, onBlur } = useBlurValidation(
+    state,
+    state?.errors ?? {},
+    (name, formData) => validateClientField(name, readClientValues(formData)),
+  );
 
   return (
-    <form action={formAction} noValidate className="max-w-xl space-y-6">
+    <form
+      action={formAction}
+      onBlur={onBlur}
+      noValidate
+      className="max-w-xl space-y-6"
+    >
       {client && <input type="hidden" name="id" value={client.id} />}
       <TextField
         label="会社名"
@@ -76,7 +92,7 @@ export function ClientForm({
         label="取引先コード"
         name="code"
         required
-        maxLength={3}
+        inputFilter={(v) => upperAlphanumericOnly(v).slice(0, 3)}
         hint="英大文字・数字の3桁（例: ABC、A1B）"
         defaultValue={values.code}
         error={errors.code}
@@ -112,6 +128,7 @@ export function ClientForm({
                   <input
                     name="paymentTermDay"
                     inputMode="numeric"
+                    {...inputFilterHandlers((v) => digitsOnly(v).slice(0, 2))}
                     aria-label="翌月 N 日の N"
                     aria-invalid={errors.paymentTermDay ? true : undefined}
                     defaultValue={values.paymentTermDay}

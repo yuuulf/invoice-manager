@@ -64,11 +64,16 @@ describe("作成", () => {
     expect(screen.getByRole("button", { name: "作成" })).toBeInTheDocument();
   });
 
-  test("件名は34文字まで入力でき、上限を注釈で示す", () => {
+  test("件名は34文字を超えても入力でき、フォーカスアウトでエラー。上限は注釈で示す", async () => {
     renderNew();
     const subject = screen.getByRole("textbox", { name: /件名/ });
-    expect(subject).toHaveAttribute("maxlength", "34");
+    expect(subject).not.toHaveAttribute("maxLength");
     expect(subject).toHaveAccessibleDescription("34文字以内");
+    await userEvent.type(subject, "あ".repeat(35));
+    await userEvent.tab();
+    expect(subject).toHaveAccessibleDescription(
+      "34文字以内 件名は34文字以内で入力してください",
+    );
   });
 
   test("取引先の選択肢は「コード 会社名」", () => {
@@ -246,6 +251,98 @@ describe("備考", () => {
       "1行50文字（半角は0.5文字）で折り返して5行まで",
     );
     expect(notes.getAttribute("style")).toContain("50.5em");
+  });
+});
+
+describe("文字数の上限とフォーカスアウトのチェック", () => {
+  test("明細は上限を超えても入力でき、フォーカスアウトでエラー", async () => {
+    renderNew();
+    const cases: [string, string, string][] = [
+      ["1行目の内容", "あ".repeat(61), "内容は60文字以内で入力してください"],
+      [
+        "1行目の数量",
+        "1".repeat(11),
+        "数量は10文字以内（小数点を含む）で入力してください",
+      ],
+      ["1行目の単位", "あ".repeat(6), "単位は5文字以内で入力してください"],
+      ["1行目の単価", "1".repeat(11), "単価は10桁以内で入力してください"],
+    ];
+    for (const [name, typed, message] of cases) {
+      const input = screen.getByRole("textbox", { name });
+      expect(input).not.toHaveAttribute("maxLength");
+      fireEvent.change(input, { target: { value: typed } });
+      fireEvent.blur(input);
+      expect(input).toHaveValue(typed);
+      expect(input).toHaveAccessibleDescription(message);
+    }
+  });
+
+  test("フォーカスアウトで形式をチェックし、直したら消す", async () => {
+    renderNew();
+    const quantity = screen.getByRole("textbox", { name: "1行目の数量" });
+    await userEvent.type(quantity, "1.234");
+    await userEvent.tab();
+    expect(quantity).toHaveAccessibleDescription(
+      "数量は0以上の数値（小数第2位まで）で入力してください",
+    );
+    await userEvent.clear(quantity);
+    await userEvent.type(quantity, "1.5");
+    await userEvent.tab();
+    expect(quantity).toBeValid();
+  });
+
+  test("未入力はフォーカスアウトではエラーにしない（必須はPDF出力時）", async () => {
+    renderNew();
+    const subject = screen.getByRole("textbox", { name: /件名/ });
+    await userEvent.click(subject);
+    await userEvent.tab();
+    expect(subject).not.toHaveAttribute("aria-invalid");
+  });
+
+  test("備考は5行を超えるとフォーカスアウトでエラー", async () => {
+    renderNew();
+    const notes = screen.getByRole("textbox", { name: "備考" });
+    fireEvent.change(notes, { target: { value: "1\n2\n3\n4\n5\n6" } });
+    fireEvent.blur(notes);
+    expect(notes).toHaveAccessibleDescription(
+      "1行50文字（半角は0.5文字）で折り返して5行まで 備考は1行50文字で折り返して5行以内で入力してください",
+    );
+  });
+});
+
+describe("金額・合計の上限（10桁）", () => {
+  test("合計が10桁を超えると明細の下にエラーを表示する", async () => {
+    renderNew();
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: /取引先/ }),
+      "1",
+    );
+    for (const row of [1, 2]) {
+      fireEvent.change(
+        screen.getByRole("textbox", { name: `${row}行目の数量` }),
+        { target: { value: "1" } },
+      );
+      fireEvent.change(
+        screen.getByRole("textbox", { name: `${row}行目の単価` }),
+        { target: { value: "5000000000" } },
+      );
+    }
+    expect(
+      screen.getByText("合計は10桁（9,999,999,999）以内にしてください"),
+    ).toBeInTheDocument();
+  });
+
+  test("金額（数量×単価）が10桁を超えると単価の欄にエラー", async () => {
+    renderNew();
+    fireEvent.change(screen.getByRole("textbox", { name: "1行目の数量" }), {
+      target: { value: "2" },
+    });
+    const unitPrice = screen.getByRole("textbox", { name: "1行目の単価" });
+    fireEvent.change(unitPrice, { target: { value: "5000000000" } });
+    fireEvent.blur(unitPrice);
+    expect(unitPrice).toHaveAccessibleDescription(
+      "金額（数量×単価）は10桁（9,999,999,999）以内にしてください",
+    );
   });
 });
 

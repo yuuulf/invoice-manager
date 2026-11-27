@@ -27,7 +27,13 @@ async function Preview({
   if (!output.ok) {
     return (
       <div className="space-y-4">
-        <FormMessage message="必須項目がそろっていないため、PDFを表示できません。編集に戻って入力してください" />
+        <FormMessage
+          message={
+            output.errors.total
+              ? `${output.errors.total}。編集に戻って直してください`
+              : "必須項目がそろっていないため、PDFを表示できません。編集に戻って入力してください"
+          }
+        />
         <ButtonLink href={`/invoices/${invoice.id}/edit`} variant="secondary">
           編集に戻る
         </ButtonLink>

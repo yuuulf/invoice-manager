@@ -180,6 +180,58 @@ describe("parseInvoiceForm（作成中の保存）", () => {
     ).toMatchObject({ ok: false, errors: { notes: message } });
   });
 
+  test("明細の文字数の上限（内容60・数量10・単位5・単価10桁）", () => {
+    expect(
+      parseInvoiceForm(
+        form({
+          "items.0.description": "あ".repeat(60),
+          "items.0.quantity": "1.50",
+          "items.1.quantity": "1234567.50",
+          "items.0.unit": "あ".repeat(5),
+          "items.0.unitPrice": "1234567890",
+        }),
+      ).ok,
+    ).toBe(true);
+    expect(
+      parseInvoiceForm(
+        form({
+          "items.0.description": "あ".repeat(61),
+          "items.1.quantity": "12345678.50",
+          "items.0.unit": "あ".repeat(6),
+          "items.0.unitPrice": "12345678901",
+        }),
+      ),
+    ).toMatchObject({
+      ok: false,
+      errors: {
+        "items.0.description": "内容は60文字以内で入力してください",
+        "items.1.quantity":
+          "数量は10文字以内（小数点を含む）で入力してください",
+        "items.0.unit": "単位は5文字以内で入力してください",
+        "items.0.unitPrice": "単価は10桁以内で入力してください",
+      },
+    });
+  });
+
+  test("金額（数量×単価）は10桁まで", () => {
+    expect(
+      parseInvoiceForm(
+        form({ "items.0.quantity": "1", "items.0.unitPrice": "9999999999" }),
+      ).ok,
+    ).toBe(true);
+    expect(
+      parseInvoiceForm(
+        form({ "items.0.quantity": "2", "items.0.unitPrice": "5000000000" }),
+      ),
+    ).toMatchObject({
+      ok: false,
+      errors: {
+        "items.0.unitPrice":
+          "金額（数量×単価）は10桁（9,999,999,999）以内にしてください",
+      },
+    });
+  });
+
   test("件名は34文字まで", () => {
     expect(SUBJECT_MAX_LENGTH).toBe(34);
     expect(parseInvoiceForm(form({ subject: "あ".repeat(34) })).ok).toBe(true);

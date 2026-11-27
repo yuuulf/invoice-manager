@@ -123,3 +123,19 @@ describe("parseClientForm", () => {
     });
   });
 });
+
+describe("文字数の上限（spec.md 5.1）", () => {
+  test.each([
+    ["name", "会社名", 40],
+    ["department", "部署", 20],
+    ["contactName", "担当者名", 20],
+  ] as const)("%s（%s）は%i文字まで", (key, label, max) => {
+    expect(parseClientForm(form({ [key]: "あ".repeat(max) })).ok).toBe(true);
+    expect(
+      parseClientForm(form({ [key]: "あ".repeat(max + 1) })),
+    ).toMatchObject({
+      ok: false,
+      errors: { [key]: `${label}は${max}文字以内で入力してください` },
+    });
+  });
+});
