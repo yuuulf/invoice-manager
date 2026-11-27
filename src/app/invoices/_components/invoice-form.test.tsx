@@ -239,18 +239,13 @@ describe("消費税（税抜・税込）", () => {
 });
 
 describe("備考", () => {
-  test("1行50文字で折り返した行数を表示する", async () => {
+  test("1行50文字で折り返して5行までと注釈を出し、全角50文字＋半角1文字の幅で折り返す", () => {
     renderNew();
     const notes = screen.getByRole("textbox", { name: "備考" });
     expect(notes).toHaveAccessibleDescription(
-      "1行50文字（半角は0.5文字）で折り返して5行まで。いま0行です",
+      "1行50文字（半角は0.5文字）で折り返して5行まで",
     );
-    fireEvent.change(notes, {
-      target: { value: `${"あ".repeat(51)}\n次の行` },
-    });
-    expect(notes).toHaveAccessibleDescription(
-      "1行50文字（半角は0.5文字）で折り返して5行まで。いま3行です",
-    );
+    expect(notes.getAttribute("style")).toContain("50.5em");
   });
 });
 
