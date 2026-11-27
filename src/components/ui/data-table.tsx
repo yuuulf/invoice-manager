@@ -1,8 +1,18 @@
+import type { ReactNode } from "react";
+
 /**
- * 一覧のテーブル（AGENTS.md「UI と文言」）。横スクロールさせないため列幅は固定レイアウトで決め、
- * 中身の長さで広がらないようにする。はみ出す文字は ClampedText で 1 行に収めて「…」にする。
+ * 一覧のテーブル（AGENTS.md「UI と文言」）。列幅は固定レイアウトで決め、中身の長さで広がらないようにする。
+ * はみ出す文字は ClampedText で 1 行に収めて「…」にする。
+ * 画面の幅が 1200px 以下になったら、表をそれ以上縮めず横スクロールにする（TableScroll で囲む）。
+ * 最小幅 59rem = 1200px − サイドバー（12rem）− 本文の左右の余白（2rem × 2）
  */
-export const tableClass = "w-full table-fixed border-collapse text-sm";
+export const tableClass =
+  "w-full min-w-[59rem] table-fixed border-collapse text-sm";
+
+/** 一覧のテーブルを囲み、画面が狭いときは表だけを横スクロールさせる */
+export function TableScroll({ children }: { children: ReactNode }) {
+  return <div className="overflow-x-auto">{children}</div>;
+}
 
 /**
  * 1 行に収まる幅を確保する列の幅（切れてはいけない列。セルには whitespace-nowrap を付ける）。
