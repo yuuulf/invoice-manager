@@ -27,7 +27,8 @@ export function SelectField({
       {(control) => (
         <select
           {...control}
-          className={controlClassName(error, className)}
+          // select は文字の行の高さが入力欄と違い低くなるため、入力欄（文字 1.5rem＋上下の余白＋枠線）と同じ高さにそろえる
+          className={controlClassName(error, `h-[2.625rem] ${className}`)}
           {...props}
         >
           <option value="">{placeholder}</option>
