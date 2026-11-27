@@ -20,7 +20,7 @@
 # production
 /build
 
-# database（バックアップ data/backups/ も含む）
+# database（開発用 data/invoice-manager.db、npm run local 用 data/local/ とそのバックアップ）
 /data/
 
 # npm run local が最新 main を取り出す専用フォルダ（git worktree）

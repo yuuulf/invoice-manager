@@ -8,6 +8,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { backupDatabase } from "./backup-db.mjs";
 import { findFreePort } from "./free-port.mjs";
+import { localBackupDir, localDatabasePath } from "./local-data.mjs";
 
 const PREFERRED_PORT = 3110;
 const HOST = "127.0.0.1";
@@ -61,14 +62,11 @@ run("npx", ["next", "build"], { cwd: runDir });
 const port = await findFreePort(Number(process.env.PORT) || PREFERRED_PORT, {
   host: HOST,
 });
-// データは専用フォルダではなく、元のリポジトリの data/ に置く
-const databasePath = path.resolve(
-  repoRoot,
-  process.env.DATABASE_PATH ?? path.join("data", "invoice-manager.db"),
-);
+// データは専用フォルダではなく元のリポジトリの data/local/ に置き、開発用のデータと分ける
+const databasePath = localDatabasePath(repoRoot);
 
 // 起動する前に DB をバックアップし、新しいものから3世代だけ残す
-const backupDir = path.join(path.dirname(databasePath), "backups");
+const backupDir = localBackupDir(databasePath);
 const Database = createRequire(path.join(runDir, "package.json"))(
   "better-sqlite3",
 );
