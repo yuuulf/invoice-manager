@@ -7,6 +7,9 @@ import {
   parseUnitPrice,
 } from "./calc";
 
+/** 件名の最大文字数。PDF で件名＋対象期間が 3 行に収まる長さ（spec.md 7.1） */
+export const SUBJECT_MAX_LENGTH = 34;
+
 /** 明細の最大行数（spec.md 7.3） */
 export const MAX_ITEMS = 10;
 
@@ -119,6 +122,9 @@ export function parseInvoiceForm(formData: FormData): InvoiceParseResult {
   }
   if (values.issueDate && !isValidDate(values.issueDate)) {
     errors.issueDate = "請求日の日付が正しくありません";
+  }
+  if ([...values.subject].length > SUBJECT_MAX_LENGTH) {
+    errors.subject = `件名は${SUBJECT_MAX_LENGTH}文字以内で入力してください`;
   }
   if (values.dueDate && !isValidDate(values.dueDate)) {
     errors.dueDate = "支払い期限の日付が正しくありません";

@@ -1,7 +1,11 @@
+/** 必須項目のラベルに付ける赤い「*」。読み上げでは「必須」と伝える */
 export function RequiredMark() {
   return (
-    <span className="ml-2 rounded bg-red-600 px-1.5 py-0.5 text-xs font-bold text-white">
-      必須
-    </span>
+    <>
+      <span aria-hidden className="ml-0.5 text-red-600">
+        *
+      </span>
+      <span className="sr-only">必須</span>
+    </>
   );
 }

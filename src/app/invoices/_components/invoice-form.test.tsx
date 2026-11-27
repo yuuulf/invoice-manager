@@ -64,6 +64,13 @@ describe("作成", () => {
     expect(screen.getByRole("button", { name: "作成" })).toBeInTheDocument();
   });
 
+  test("件名は34文字まで入力でき、上限を注釈で示す", () => {
+    renderNew();
+    const subject = screen.getByRole("textbox", { name: /件名/ });
+    expect(subject).toHaveAttribute("maxlength", "34");
+    expect(subject).toHaveAccessibleDescription("34文字以内");
+  });
+
   test("取引先の選択肢は「コード 会社名」", () => {
     renderNew();
     const select = screen.getByRole("combobox", { name: /取引先/ });
@@ -376,6 +383,6 @@ describe("PDF 出力（spec.md 7.4）", () => {
     );
     expect(
       screen.getByRole("textbox", { name: /件名/ }),
-    ).toHaveAccessibleDescription("件名を入力してください");
+    ).toHaveAccessibleDescription("34文字以内 件名を入力してください");
   });
 });

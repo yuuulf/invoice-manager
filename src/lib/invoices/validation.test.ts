@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { parseInvoiceForm } from "./validation";
+import { parseInvoiceForm, SUBJECT_MAX_LENGTH } from "./validation";
 
 function form(entries: Record<string, string> = {}) {
   const fd = new FormData();
@@ -141,6 +141,15 @@ describe("parseInvoiceForm（作成中の保存）", () => {
     expect(
       parseInvoiceForm(form({ ...base, periodEnd: "2026-11-15" })).ok,
     ).toBe(true);
+  });
+
+  test("件名は34文字まで", () => {
+    expect(SUBJECT_MAX_LENGTH).toBe(34);
+    expect(parseInvoiceForm(form({ subject: "あ".repeat(34) })).ok).toBe(true);
+    expect(parseInvoiceForm(form({ subject: "あ".repeat(35) }))).toMatchObject({
+      ok: false,
+      errors: { subject: "件名は34文字以内で入力してください" },
+    });
   });
 
   test("エラーのときは入力値を返す", () => {
