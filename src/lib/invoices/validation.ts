@@ -7,10 +7,12 @@ import {
 import { getText, isOneOf } from "@/lib/form-data";
 import { exceeds, maxLengthMessage } from "@/lib/text-rules";
 import {
+  AMOUNT_MAX,
   isValidDate,
   isValidMonth,
   parseQuantity,
   parseUnitPrice,
+  QUANTITY_SCALE,
 } from "./calc";
 
 /** 件名の最大文字数。PDF で件名＋対象期間が 3 行に収まる長さ（spec.md 7.1） */
@@ -19,8 +21,8 @@ export const SUBJECT_MAX_LENGTH = 34;
 /** 明細の文字数の上限（spec.md 7.3）。数量は小数点も 1 文字、単価は桁数 */
 export const ITEM_MAX_LENGTHS = {
   description: 60,
-  quantity: 15,
-  unit: 10,
+  quantity: 10,
+  unit: 5,
   unitPrice: 10,
 } as const;
 
@@ -157,6 +159,12 @@ function parseId(value: string) {
   return /^\d+$/.test(value) ? Number(value) : null;
 }
 
+/** 金額（数量 × 単価）が上限を超えたときのメッセージ */
+export const AMOUNT_TOO_LARGE =
+  "金額（数量×単価）は10桁（9,999,999,999）以内にしてください";
+/** 合計が上限を超えたときのメッセージ */
+export const TOTAL_TOO_LARGE = "合計は10桁（9,999,999,999）以内にしてください";
+
 const ITEM_FIELD_PATTERN =
   /^items\.(\d+)\.(description|quantity|unit|unitPrice)$/;
 
@@ -189,12 +197,18 @@ export function validateInvoiceField(
         return parseQuantity(value) === null
           ? "数量は0以上の数値（小数第2位まで）で入力してください"
           : undefined;
-      case "unitPrice":
-        if (parseUnitPrice(value) === null)
-          return "単価は0以上の整数で入力してください";
-        return exceeds(value, ITEM_MAX_LENGTHS.unitPrice)
-          ? `単価は${ITEM_MAX_LENGTHS.unitPrice}桁以内で入力してください`
+      case "unitPrice": {
+        const unitPrice = parseUnitPrice(value);
+        if (unitPrice === null) return "単価は0以上の整数で入力してください";
+        if (exceeds(value, ITEM_MAX_LENGTHS.unitPrice))
+          return `単価は${ITEM_MAX_LENGTHS.unitPrice}桁以内で入力してください`;
+        // 金額（数量 × 単価）も 10 桁まで。端数処理によらず超えないよう、切り上げで見る
+        const quantity = parseQuantity(values.items[Number(item[1])].quantity);
+        return quantity !== null &&
+          Math.ceil((quantity * unitPrice) / QUANTITY_SCALE) > AMOUNT_MAX
+          ? AMOUNT_TOO_LARGE
           : undefined;
+      }
     }
   }
 

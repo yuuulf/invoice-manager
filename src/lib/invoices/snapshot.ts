@@ -1,7 +1,11 @@
 import type { Client, Invoice, InvoiceItem, Owner } from "@/db/schema";
-import { calcAmount, calcTotals, type Period } from "./calc";
-import { periodOf, type InvoiceWithItems } from "./repository";
-import { itemFieldName, type InvoiceFormErrors } from "./validation";
+import { AMOUNT_MAX, calcAmount, calcTotals, type Period } from "./calc";
+import { calcTotal, periodOf, type InvoiceWithItems } from "./repository";
+import {
+  itemFieldName,
+  TOTAL_TOO_LARGE,
+  type InvoiceFormErrors,
+} from "./validation";
 
 /**
  * PDF を出力するのに必要なデータ一式。確定時は台帳にこのまま保存し、
@@ -124,6 +128,25 @@ export function checkCompleteness(
       errors[name("unitPrice")] = "単価を入力してください";
   }
   return errors;
+}
+
+/**
+ * 合計（税込なら消費税相当額込み）が上限（10 桁）を超えていればエラーを返す（spec.md 7.3）。
+ * 取引先の端数処理で計算するため、PDF 出力（確定を含む）の前に取引先と合わせてチェックする
+ */
+export function checkTotal(
+  invoice: {
+    items: Pick<InvoiceItem, "quantity" | "unitPrice">[];
+    taxMode: InvoiceWithItems["taxMode"];
+  },
+  rounding: Client["rounding"],
+): InvoiceFormErrors {
+  const { total } = calcTotals(
+    calcTotal(invoice.items, rounding),
+    invoice.taxMode,
+    rounding,
+  );
+  return total > AMOUNT_MAX ? { total: TOTAL_TOO_LARGE } : {};
 }
 
 /** 必須項目がそろった請求書から PDF 用のデータを作る。そろっていなければ例外 */

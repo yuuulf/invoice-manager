@@ -261,10 +261,10 @@ describe("文字数の上限とフォーカスアウトのチェック", () => {
       ["1行目の内容", "あ".repeat(61), "内容は60文字以内で入力してください"],
       [
         "1行目の数量",
-        "1".repeat(16),
-        "数量は15文字以内（小数点を含む）で入力してください",
+        "1".repeat(11),
+        "数量は10文字以内（小数点を含む）で入力してください",
       ],
-      ["1行目の単位", "あ".repeat(11), "単位は10文字以内で入力してください"],
+      ["1行目の単位", "あ".repeat(6), "単位は5文字以内で入力してください"],
       ["1行目の単価", "1".repeat(11), "単価は10桁以内で入力してください"],
     ];
     for (const [name, typed, message] of cases) {
@@ -306,6 +306,42 @@ describe("文字数の上限とフォーカスアウトのチェック", () => {
     fireEvent.blur(notes);
     expect(notes).toHaveAccessibleDescription(
       "1行50文字（半角は0.5文字）で折り返して5行まで 備考は1行50文字で折り返して5行以内で入力してください",
+    );
+  });
+});
+
+describe("金額・合計の上限（10桁）", () => {
+  test("合計が10桁を超えると明細の下にエラーを表示する", async () => {
+    renderNew();
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: /取引先/ }),
+      "1",
+    );
+    for (const row of [1, 2]) {
+      fireEvent.change(
+        screen.getByRole("textbox", { name: `${row}行目の数量` }),
+        { target: { value: "1" } },
+      );
+      fireEvent.change(
+        screen.getByRole("textbox", { name: `${row}行目の単価` }),
+        { target: { value: "5000000000" } },
+      );
+    }
+    expect(
+      screen.getByText("合計は10桁（9,999,999,999）以内にしてください"),
+    ).toBeInTheDocument();
+  });
+
+  test("金額（数量×単価）が10桁を超えると単価の欄にエラー", async () => {
+    renderNew();
+    fireEvent.change(screen.getByRole("textbox", { name: "1行目の数量" }), {
+      target: { value: "2" },
+    });
+    const unitPrice = screen.getByRole("textbox", { name: "1行目の単価" });
+    fireEvent.change(unitPrice, { target: { value: "5000000000" } });
+    fireEvent.blur(unitPrice);
+    expect(unitPrice).toHaveAccessibleDescription(
+      "金額（数量×単価）は10桁（9,999,999,999）以内にしてください",
     );
   });
 });

@@ -16,6 +16,7 @@ import {
   basisMonthOf,
   calcAmount,
   calcDueDate,
+  AMOUNT_MAX,
   calcTotals,
   formatAmount,
   formatQuantity,
@@ -37,6 +38,7 @@ import {
   NOTES_MAX_LINES,
   readInvoiceValues,
   SUBJECT_MAX_LENGTH,
+  TOTAL_TOO_LARGE,
   validateInvoiceField,
   type InvoiceFormValues,
   type ItemFormValues,
@@ -564,6 +566,12 @@ function ItemsTable({
           <TotalRow label="合計" value={totals?.total ?? null} bold />
         </tfoot>
       </table>
+      <FieldError
+        id="total-error"
+        message={
+          totals && totals.total > AMOUNT_MAX ? TOTAL_TOO_LARGE : errors.total
+        }
+      />
       <p className="mt-2 text-sm text-zinc-500">
         {rounding
           ? `金額は数量×単価を取引先の端数処理（${roundingLabels[rounding]}）で計算します。${totals?.tax != null ? `消費税相当額も小計の${TAX_RATE}%を同じ端数処理で計算します。` : ""}最大10行です。`
