@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { FormActions, type FormMode } from "@/components/ui/form-actions";
+import { FormColumns } from "@/components/ui/form-columns";
 import { FormSection } from "@/components/ui/form-section";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { TextField } from "@/components/ui/text-field";
@@ -79,77 +80,79 @@ export function OwnerForm({
       action={formAction}
       onBlur={onBlur}
       noValidate
-      className="max-w-xl space-y-10"
+      className="max-w-4xl space-y-10"
     >
       {owner && <input type="hidden" name="id" value={owner.id} />}
-      <FormSection title="基本情報">
-        <TextField label="屋号" {...field("tradeName")} />
-        <TextField label="氏名" required {...field("name")} />
-        <TextField
-          label="郵便番号"
-          required
-          inputMode="numeric"
-          inputFilter={digits(7)}
-          hint="ハイフンなしの7桁（例: 1500001）"
-          className="w-32"
-          {...field("postalCode")}
-        />
-        <TextField label="住所（1行目）" required {...field("address1")} />
-        <TextField label="住所（2行目）" {...field("address2")} />
-        <TextField
-          label="電話番号"
-          required
-          type="tel"
-          hint="数字とハイフン（例: 03-1234-5678）"
-          {...field("phone")}
-        />
-        <TextField
-          label="メールアドレス"
-          required
-          type="email"
-          {...field("email")}
-        />
-      </FormSection>
-      <FormSection title="振込先">
-        <TextField label="銀行名" required {...field("bankName")} />
-        <TextField
-          label="銀行番号"
-          required
-          inputMode="numeric"
-          inputFilter={digits(4)}
-          hint="4桁の数字"
-          {...field("bankCode")}
-        />
-        <TextField label="支店名" required {...field("branchName")} />
-        <TextField
-          label="支店番号"
-          required
-          inputMode="numeric"
-          inputFilter={digits(3)}
-          hint="3桁の数字"
-          {...field("branchCode")}
-        />
-        <RadioGroup
-          legend="科目"
-          name="accountType"
-          required
-          defaultValue={values.accountType}
-          error={errors.accountType}
-          options={accountTypes.map((value) => ({
-            value,
-            label: accountTypeLabels[value],
-          }))}
-        />
-        <TextField
-          label="口座番号"
-          required
-          inputMode="numeric"
-          inputFilter={digits(7)}
-          hint="7桁の数字"
-          {...field("accountNumber")}
-        />
-        <TextField label="口座名義" required {...field("accountHolder")} />
-      </FormSection>
+      <FormColumns>
+        <FormSection title="基本情報">
+          <TextField label="屋号" {...field("tradeName")} />
+          <TextField label="氏名" required {...field("name")} />
+          <TextField
+            label="郵便番号"
+            required
+            inputMode="numeric"
+            inputFilter={digits(7)}
+            hint="ハイフンなしの7桁（例: 1500001）"
+            className="w-32"
+            {...field("postalCode")}
+          />
+          <TextField label="住所（1行目）" required {...field("address1")} />
+          <TextField label="住所（2行目）" {...field("address2")} />
+          <TextField
+            label="電話番号"
+            required
+            type="tel"
+            hint="数字とハイフン（例: 03-1234-5678）"
+            {...field("phone")}
+          />
+          <TextField
+            label="メールアドレス"
+            required
+            type="email"
+            {...field("email")}
+          />
+        </FormSection>
+        <FormSection title="振込先">
+          <TextField label="銀行名" required {...field("bankName")} />
+          <TextField
+            label="銀行番号"
+            required
+            inputMode="numeric"
+            inputFilter={digits(4)}
+            hint="4桁の数字"
+            {...field("bankCode")}
+          />
+          <TextField label="支店名" required {...field("branchName")} />
+          <TextField
+            label="支店番号"
+            required
+            inputMode="numeric"
+            inputFilter={digits(3)}
+            hint="3桁の数字"
+            {...field("branchCode")}
+          />
+          <RadioGroup
+            legend="科目"
+            name="accountType"
+            required
+            defaultValue={values.accountType}
+            error={errors.accountType}
+            options={accountTypes.map((value) => ({
+              value,
+              label: accountTypeLabels[value],
+            }))}
+          />
+          <TextField
+            label="口座番号"
+            required
+            inputMode="numeric"
+            inputFilter={digits(7)}
+            hint="7桁の数字"
+            {...field("accountNumber")}
+          />
+          <TextField label="口座名義" required {...field("accountHolder")} />
+        </FormSection>
+      </FormColumns>
       <FormSection title="データ印">
         <SealField
           currentSealUrl={

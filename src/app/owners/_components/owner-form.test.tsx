@@ -35,6 +35,18 @@ test("基本情報・振込先・データ印のまとまりで表示し、科�
   expect(screen.getByRole("button", { name: "作成" })).toBeInTheDocument();
 });
 
+test("基本情報と振込先を左右に並べ、データ印はその下に置く", () => {
+  render(<OwnerForm action={vi.fn()} mode="create" />);
+  const columns = screen.getByTestId("form-columns");
+  const sections = Array.from(columns.children).map(
+    (child) => child.querySelector("legend")?.textContent,
+  );
+  expect(sections).toEqual(["基本情報", "振込先"]);
+  expect(columns).not.toContainElement(
+    screen.getByRole("group", { name: "データ印" }),
+  );
+});
+
 test("編集では登録済みの内容とデータ印を表示する", () => {
   render(<OwnerForm action={vi.fn()} owner={owner} mode="edit" />);
   expect(screen.getByRole("textbox", { name: /氏名/ })).toHaveValue(
