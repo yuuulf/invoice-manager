@@ -21,9 +21,11 @@ import {
   confirmInvoice,
   copyLedgerToInvoice,
   deleteLedgerEntry,
+  getLedgerEntry,
   getLedgerOutput,
   listLedger,
   prepareInvoiceOutput,
+  updateLedgerStatus,
 } from "./repository";
 
 let db: Db;
@@ -271,6 +273,90 @@ describe("台帳の削除", () => {
       deleteLedgerEntry(db, ledgerId, " INV-ABC-202611-001 "),
     ).toBeUndefined();
     expect(listLedger(db)).toEqual([]);
+  });
+
+  test("送信済みの台帳は削除できず、未送信に戻せば削除できる（spec.md 7.6）", () => {
+    const ledgerId = confirm(createInvoice());
+    updateLedgerStatus(db, ledgerId, {
+      sentOn: "2026-11-30",
+      paidOn: null,
+      sentFileUrl: null,
+      memo: null,
+    });
+    expect(deleteLedgerEntry(db, ledgerId, "INV-ABC-202611-001")).toEqual({
+      error:
+        "送信済みの台帳は削除できません。未送信に戻してから削除してください。",
+    });
+    expect(listLedger(db)).toHaveLength(1);
+
+    updateLedgerStatus(db, ledgerId, {
+      sentOn: null,
+      paidOn: null,
+      sentFileUrl: null,
+      memo: null,
+    });
+    expect(
+      deleteLedgerEntry(db, ledgerId, "INV-ABC-202611-001"),
+    ).toBeUndefined();
+  });
+});
+
+describe("送信・入金・備考（spec.md 7.6）", () => {
+  test("確定した直後は未送信・未入金で備考なし", () => {
+    const ledgerId = confirm(createInvoice());
+    expect(getLedgerEntry(db, ledgerId)).toMatchObject({
+      sentOn: null,
+      paidOn: null,
+      memo: null,
+    });
+    expect(listLedger(db)[0]).toMatchObject({ sentOn: null, paidOn: null });
+  });
+
+  test("編集画面用に、確定時の事業主の表示名と支払い期限も返す", () => {
+    const ledgerId = confirm(createInvoice());
+    const owner = db.select().from(owners).where(eq(owners.id, ownerId)).get()!;
+    const entry = getLedgerEntry(db, ledgerId)!;
+    expect(entry.ownerName).toBe(
+      owner.tradeName ? `${owner.tradeName}（${owner.name}）` : owner.name,
+    );
+    expect(entry.dueDate).toBe(getLedgerOutput(db, ledgerId)!.snapshot.dueDate);
+    expect(entry.dueDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  test("送信日・入金日・備考を保存し、確定した内容は変えない", () => {
+    const ledgerId = confirm(createInvoice());
+    const before = getLedgerOutput(db, ledgerId);
+    updateLedgerStatus(db, ledgerId, {
+      sentOn: "2026-11-30",
+      paidOn: "2026-12-25",
+      sentFileUrl: "https://drive.google.com/file/d/abc/view",
+      memo: "12/25 振込確認",
+    });
+    expect(listLedger(db)[0]).toMatchObject({
+      sentFileUrl: "https://drive.google.com/file/d/abc/view",
+      memo: "12/25 振込確認",
+    });
+    expect(getLedgerEntry(db, ledgerId)).toMatchObject({
+      sentFileUrl: "https://drive.google.com/file/d/abc/view",
+      invoiceNumber: "INV-ABC-202611-001",
+      sentOn: "2026-11-30",
+      paidOn: "2026-12-25",
+      memo: "12/25 振込確認",
+    });
+    expect(getLedgerOutput(db, ledgerId)).toEqual(before);
+  });
+
+  test("送信日がないまま入金日は保存できない", () => {
+    const ledgerId = confirm(createInvoice());
+    expect(() =>
+      updateLedgerStatus(db, ledgerId, {
+        sentOn: null,
+        paidOn: "2026-12-25",
+        sentFileUrl: null,
+        memo: null,
+      }),
+    ).toThrow();
+    expect(getLedgerEntry(db, ledgerId)?.paidOn).toBeNull();
   });
 });
 

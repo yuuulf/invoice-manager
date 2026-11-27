@@ -8,7 +8,18 @@ import { getText } from "@/lib/form-data";
 import {
   copyLedgerToInvoice,
   deleteLedgerEntry,
+  updateLedgerStatus,
 } from "@/lib/ledger/repository";
+import {
+  parseLedgerForm,
+  type LedgerFormErrors,
+  type LedgerFormValues,
+} from "@/lib/ledger/validation";
+
+export type LedgerFormState = {
+  errors: LedgerFormErrors;
+  values: LedgerFormValues;
+} | null;
 
 function idFrom(formData: FormData) {
   const id = Number(formData.get("id"));
@@ -34,4 +45,17 @@ export async function deleteLedgerAction(
   );
   revalidatePath("/ledger", "layout");
   return result;
+}
+
+/** 台帳の送信・入金・備考を保存する（spec.md 7.6） */
+export async function updateLedgerAction(
+  _prev: LedgerFormState,
+  formData: FormData,
+): Promise<LedgerFormState> {
+  const parsed = parseLedgerForm(formData);
+  if (!parsed.ok) return { errors: parsed.errors, values: parsed.values };
+
+  updateLedgerStatus(getDb(), idFrom(formData), parsed.data);
+  revalidatePath("/ledger", "layout");
+  redirect("/ledger");
 }

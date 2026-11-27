@@ -93,6 +93,9 @@ export function ActionMenu({
   );
 }
 
+const itemClassName =
+  "flex w-full items-center gap-2 px-4 py-2 text-left text-sm whitespace-nowrap hover:bg-zinc-100 focus:bg-zinc-100 focus:outline-none";
+
 type ActionMenuItemProps = Omit<ComponentProps<"button">, "role"> & {
   icon?: ReactNode;
   danger?: boolean;
@@ -125,11 +128,36 @@ export function ActionMenuItem({
         // フォームの送信が始まってから閉じる
         setTimeout(closeMenu, 0);
       }}
-      className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm whitespace-nowrap hover:bg-zinc-100 focus:bg-zinc-100 focus:outline-none ${danger ? "text-red-600" : ""} ${className}`}
+      className={`${itemClassName} disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent ${danger ? "text-red-600" : ""} ${className}`}
       {...props}
     >
       {icon}
       {children}
     </button>
+  );
+}
+
+/** ActionMenu の項目のうち、リンク（ファイルのダウンロードなど）になるもの */
+export function ActionMenuAnchor({
+  icon,
+  onClick,
+  children,
+  className = "",
+  ...props
+}: Omit<ComponentProps<"a">, "role"> & { icon?: ReactNode }) {
+  const closeMenu = useContext(CloseMenuContext);
+  return (
+    <a
+      role="menuitem"
+      onClick={(event) => {
+        onClick?.(event);
+        setTimeout(closeMenu, 0);
+      }}
+      className={`${itemClassName} ${className}`}
+      {...props}
+    >
+      {icon}
+      {children}
+    </a>
   );
 }

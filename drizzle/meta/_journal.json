@@ -36,6 +36,20 @@
       "when": 1795757016328,
       "tag": "0004_add_invoice_tax_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1795787582176,
+      "tag": "0005_add_ledger_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1795788579360,
+      "tag": "0006_add_ledger_sent_file_url",
+      "breakpoints": true
     }
   ]
 }

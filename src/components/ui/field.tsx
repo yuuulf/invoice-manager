@@ -18,12 +18,15 @@ export function Field({
   required,
   hint,
   error,
+  addon,
   children,
 }: {
   label: string;
   required?: boolean;
   hint?: string;
   error?: string;
+  /** 入力欄の右に並べる要素（例: 入力した URL を開くリンク） */
+  addon?: ReactNode;
   children: (control: FieldControlProps) => ReactNode;
 }) {
   const id = useId();
@@ -31,6 +34,12 @@ export function Field({
   const hintId = `${id}-hint`;
   const describedBy =
     [hint && hintId, error && errorId].filter(Boolean).join(" ") || undefined;
+  const control: FieldControlProps = {
+    id,
+    required,
+    "aria-invalid": error ? true : undefined,
+    "aria-describedby": describedBy,
+  };
 
   return (
     <div>
@@ -38,12 +47,15 @@ export function Field({
         {label}
         {required && <RequiredMark />}
       </label>
-      {children({
-        id,
-        required,
-        "aria-invalid": error ? true : undefined,
-        "aria-describedby": describedBy,
-      })}
+      {addon ? (
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">{children(control)}</div>
+          {/* 入力欄の上の余白（mt-1）に合わせる */}
+          <div className="mt-1 shrink-0">{addon}</div>
+        </div>
+      ) : (
+        children(control)
+      )}
       {hint && (
         <p id={hintId} className="mt-1 text-sm text-zinc-500">
           {hint}
