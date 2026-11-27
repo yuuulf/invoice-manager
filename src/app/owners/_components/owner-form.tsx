@@ -10,7 +10,6 @@ import { accountTypes } from "@/db/schema";
 import { accountTypeLabels } from "@/lib/owners/labels";
 import type { OwnerSummary } from "@/lib/owners/repository";
 import {
-  OWNER_MAX_LENGTHS,
   readOwnerValues,
   validateOwnerField,
   type OwnerFormValues,
@@ -70,7 +69,6 @@ export function OwnerForm({
     name,
     defaultValue: values[name],
     error: errors[name],
-    maxLength: OWNER_MAX_LENGTHS[name as keyof typeof OWNER_MAX_LENGTHS],
   });
   /** 入力制限: 数字だけを、決まった桁数まで */
   const digits = (length: number) => (value: string) =>

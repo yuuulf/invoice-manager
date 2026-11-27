@@ -115,13 +115,16 @@ test("郵便番号・銀行番号・支店番号・口座番号は数字だけ�
   }
 });
 
-test("文字数の上限まで入力でき、フォーカスアウトでエラーを表示する", async () => {
+test("文字数の上限を超えても入力でき、フォーカスアウトでエラーを表示する", async () => {
   render(<OwnerForm action={vi.fn()} mode="create" />);
   const name = screen.getByRole("textbox", { name: /氏名/ });
-  expect(name).toHaveAttribute("maxLength", "20");
-  expect(screen.getByRole("textbox", { name: /口座名義/ })).toHaveAttribute(
-    "maxLength",
-    "50",
+  expect(name).not.toHaveAttribute("maxLength");
+  const holder = screen.getByRole("textbox", { name: /口座名義/ });
+  await userEvent.type(holder, "ア".repeat(51));
+  expect(holder).toHaveValue("ア".repeat(51));
+  await userEvent.tab();
+  expect(holder).toHaveAccessibleDescription(
+    "口座名義は50文字以内で入力してください",
   );
   await userEvent.click(name);
   await userEvent.tab();

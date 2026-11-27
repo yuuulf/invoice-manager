@@ -19,7 +19,6 @@ import {
   roundingLabels,
 } from "@/lib/clients/labels";
 import {
-  CLIENT_MAX_LENGTHS,
   readClientValues,
   validateClientField,
   type ClientFormValues,
@@ -86,7 +85,6 @@ export function ClientForm({
         label="会社名"
         name="name"
         required
-        maxLength={CLIENT_MAX_LENGTHS.name}
         defaultValue={values.name}
         error={errors.name}
       />
@@ -103,14 +101,12 @@ export function ClientForm({
       <TextField
         label="部署"
         name="department"
-        maxLength={CLIENT_MAX_LENGTHS.department}
         defaultValue={values.department}
         error={errors.department}
       />
       <TextField
         label="担当者名"
         name="contactName"
-        maxLength={CLIENT_MAX_LENGTHS.contactName}
         defaultValue={values.contactName}
         error={errors.contactName}
       />

@@ -31,7 +31,6 @@ import { roundingLabels } from "@/lib/clients/labels";
 import { taxModeLabels } from "@/lib/invoices/labels";
 import type { InvoiceWithItems } from "@/lib/invoices/repository";
 import {
-  ITEM_MAX_LENGTHS,
   itemFieldName,
   MAX_ITEMS,
   NOTES_LINE_WIDTH,
@@ -317,7 +316,6 @@ function InvoiceFields({
           label="件名"
           name="subject"
           required
-          maxLength={SUBJECT_MAX_LENGTH}
           hint={`${SUBJECT_MAX_LENGTH}文字以内`}
           defaultValue={initial.subject}
           error={errors.subject}
@@ -503,7 +501,6 @@ function ItemsTable({
                 : undefined
           }
           value={items[position][key]}
-          maxLength={ITEM_MAX_LENGTHS[key]}
           onChange={(e) => onChange(position, key, e.target.value)}
           className={`${cellInput} ${numeric ? "text-right" : ""}`}
         />

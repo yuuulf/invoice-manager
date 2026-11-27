@@ -64,11 +64,16 @@ describe("作成", () => {
     expect(screen.getByRole("button", { name: "作成" })).toBeInTheDocument();
   });
 
-  test("件名は34文字まで入力でき、上限を注釈で示す", () => {
+  test("件名は34文字を超えても入力でき、フォーカスアウトでエラー。上限は注釈で示す", async () => {
     renderNew();
     const subject = screen.getByRole("textbox", { name: /件名/ });
-    expect(subject).toHaveAttribute("maxlength", "34");
+    expect(subject).not.toHaveAttribute("maxLength");
     expect(subject).toHaveAccessibleDescription("34文字以内");
+    await userEvent.type(subject, "あ".repeat(35));
+    await userEvent.tab();
+    expect(subject).toHaveAccessibleDescription(
+      "34文字以内 件名は34文字以内で入力してください",
+    );
   });
 
   test("取引先の選択肢は「コード 会社名」", () => {
@@ -250,19 +255,25 @@ describe("備考", () => {
 });
 
 describe("文字数の上限とフォーカスアウトのチェック", () => {
-  test("明細は内容60・数量15・単位10・単価10文字まで入力できる", () => {
+  test("明細は上限を超えても入力でき、フォーカスアウトでエラー", async () => {
     renderNew();
-    const limits: [string, string][] = [
-      ["1行目の内容", "60"],
-      ["1行目の数量", "15"],
-      ["1行目の単位", "10"],
-      ["1行目の単価", "10"],
+    const cases: [string, string, string][] = [
+      ["1行目の内容", "あ".repeat(61), "内容は60文字以内で入力してください"],
+      [
+        "1行目の数量",
+        "1".repeat(16),
+        "数量は15文字以内（小数点を含む）で入力してください",
+      ],
+      ["1行目の単位", "あ".repeat(11), "単位は10文字以内で入力してください"],
+      ["1行目の単価", "1".repeat(11), "単価は10桁以内で入力してください"],
     ];
-    for (const [name, max] of limits) {
-      expect(screen.getByRole("textbox", { name })).toHaveAttribute(
-        "maxLength",
-        max,
-      );
+    for (const [name, typed, message] of cases) {
+      const input = screen.getByRole("textbox", { name });
+      expect(input).not.toHaveAttribute("maxLength");
+      fireEvent.change(input, { target: { value: typed } });
+      fireEvent.blur(input);
+      expect(input).toHaveValue(typed);
+      expect(input).toHaveAccessibleDescription(message);
     }
   });
 

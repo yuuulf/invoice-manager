@@ -103,17 +103,16 @@ test("翌月N日のNは数字2桁まで", async () => {
   expect(day).toHaveValue("12");
 });
 
-test("文字数の上限まで入力でき、フォーカスアウトでエラーを表示する", async () => {
+test("文字数の上限を超えても入力でき、フォーカスアウトでエラーを表示する", async () => {
   render(<ClientForm action={vi.fn()} mode="create" />);
   const name = screen.getByRole("textbox", { name: /会社名/ });
-  expect(name).toHaveAttribute("maxLength", "40");
-  expect(screen.getByRole("textbox", { name: /部署/ })).toHaveAttribute(
-    "maxLength",
-    "20",
-  );
-  expect(screen.getByRole("textbox", { name: /担当者名/ })).toHaveAttribute(
-    "maxLength",
-    "20",
+  expect(name).not.toHaveAttribute("maxLength");
+  const department = screen.getByRole("textbox", { name: /部署/ });
+  await userEvent.type(department, "あ".repeat(21));
+  expect(department).toHaveValue("あ".repeat(21));
+  await userEvent.tab();
+  expect(department).toHaveAccessibleDescription(
+    "部署は20文字以内で入力してください",
   );
   await userEvent.click(name);
   await userEvent.tab();

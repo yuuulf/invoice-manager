@@ -85,7 +85,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 作成・編集フォームの下部は `FormActions` を使う。入力欄の右端に揃え、左から「キャンセル」「作成」（作成画面）／「保存」（編集画面）の順に並べる。「新規作成」「新規登録」とは書かない
 - 入力エラーは項目の下に表示し、入力欄に `aria-invalid` と `aria-describedby` で関連付ける（`TextField`・`RadioGroup` が対応済み）
 - 入力チェックは項目ごとの関数（`src/lib/<機能>/validation.ts` の `validate{機能}Field(name, values)`）に書き、保存時（`parse...Form`）とフォーカスアウト時（`useBlurValidation` をフォームの `onBlur` に渡す）の両方で使う。ブラウザでも動くよう、サーバー専用のモジュールを import しない
-- 文字数の上限は validation.ts の定数（例: `CLIENT_MAX_LENGTHS`）にまとめ、入力欄の `maxLength` とチェックの両方で使う。決まった文字・桁数だけを入力させる項目は `TextField` の `inputFilter`（`@/lib/text-rules` の `digitsOnly` など）を使う
+- 文字数の上限は validation.ts の定数（例: `CLIENT_MAX_LENGTHS`）にまとめてチェックで使う。入力欄に `maxLength` は付けず（入力は止めない）、フォーカスアウトと保存時のエラーで知らせる。入力制限のある項目（spec.md 3.1。決まった文字・桁数だけ）だけ `TextField` の `inputFilter`（`@/lib/text-rules` の `digitsOnly` など）を使う
 - 画面の文言は日本語で統一する。同じ概念には同じ用語を使う（例: 「取引先」「事業主」「請求書」「台帳」「確定」「アーカイブ」「作成」「保存」）。用語は `spec.md` に合わせ、新しい用語が必要なら spec.md に追記する
 - ボタン・見出し・エラーメッセージの言い回し（「〜する」「〜を入力してください」等）も既存画面と揃える
 
