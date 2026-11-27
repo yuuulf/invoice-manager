@@ -1,7 +1,14 @@
 // @vitest-environment node
-import { expect, test } from "vitest";
-import { renderInvoicePdf } from "./render-invoice";
+import { describe, expect, test } from "vitest";
+import type { InvoiceSnapshot } from "@/lib/invoices/snapshot";
+import {
+  createDocument,
+  layoutRecipientBlock,
+  renderInvoicePdf,
+} from "./render-invoice";
 import { sampleSnapshot } from "./test-snapshot";
+
+const mm = (value: number) => value * 2.8346;
 
 const png = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
@@ -35,4 +42,48 @@ test("確定前（sample）は透かしの分だけ内容が増える", async ()
   ]);
   expect(sample.toString("latin1")).toContain("/ca 0.12");
   expect(confirmed.toString("latin1")).not.toContain("/ca 0.12");
+});
+
+describe("上段・左の配置（件名が長いとき）", () => {
+  const longSubject = {
+    ...sampleSnapshot,
+    subject: "Webサイト保守・改修およびランディングページ制作",
+    period: { type: "range", start: "2026-11-01", end: "2026-11-30" },
+  } satisfies InvoiceSnapshot;
+  const veryLongSubject = {
+    ...longSubject,
+    subject:
+      "Webサイト保守・改修およびランディングページ制作とバナー画像制作一式、アクセス解析レポート作成",
+  } satisfies InvoiceSnapshot;
+  const layout = (s: InvoiceSnapshot) =>
+    layoutRecipientBlock(createDocument("test"), s);
+
+  test("件名が1行なら、リード文・ご請求金額は従来の位置", () => {
+    const short = layout(sampleSnapshot);
+    expect(short.subjectLines).toBe(1);
+    expect(short.leadY).toBeCloseTo(short.subjectY + mm(8));
+    expect(short.amountY).toBeCloseTo(mm(83));
+  });
+
+  test("件名が2行になったら、リード文を1行分下げて重ねない", () => {
+    const short = layout(sampleSnapshot);
+    const long = layout(longSubject);
+    expect(long.subjectLines).toBe(2);
+    expect(long.leadY).toBeGreaterThanOrEqual(
+      long.subjectY + long.subjectLineHeight * 2,
+    );
+    expect(long.leadY - short.leadY).toBeCloseTo(long.subjectLineHeight);
+  });
+
+  test("3行以上になる件名も2行に収め、宛名が2行でもご請求金額と明細に重ねない", () => {
+    const s = {
+      ...veryLongSubject,
+      client: { ...veryLongSubject.client, contactName: "佐藤 花子" },
+    };
+    const l = layout(s);
+    expect(l.subjectLines).toBe(2);
+    expect(l.amountY).toBeGreaterThanOrEqual(l.leadY + mm(10));
+    // ご請求金額の下線（金額の文字の下）が明細の上端（100mm）より上にある
+    expect(l.amountY + 15 * 1.45).toBeLessThan(mm(100));
+  });
 });
