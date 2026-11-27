@@ -32,6 +32,8 @@ const COL = { quantity: mm(24), unitPrice: mm(24), amount: mm(28) };
 const ROW_HEIGHT = mm(7.2);
 const ITEM_ROWS = 10;
 const CELL_PADDING = mm(2);
+/** 明細の上端。件名が長くご請求金額が下がったときは、その分下げる */
+const ITEMS_TOP = mm(100);
 
 type Options = {
   /** 確定していない出力。SAMPLE の透かしを入れる（spec.md 7.4） */
@@ -69,9 +71,9 @@ export function renderInvoicePdf(
 
   drawMeta(doc, snapshot);
   drawTitle(doc);
-  drawRecipientBlock(doc, snapshot);
+  const { itemsTop } = drawRecipientBlock(doc, snapshot);
   drawOwnerBlock(doc, snapshot, seal);
-  const tableBottom = drawItems(doc, snapshot);
+  const tableBottom = drawItems(doc, snapshot, itemsTop);
   const payBottom = drawPayment(doc, snapshot, tableBottom + mm(12));
   drawNotes(doc, snapshot, payBottom + mm(8));
   if (sample) drawSampleWatermark(doc);
@@ -123,14 +125,12 @@ function drawTitle(doc: Doc) {
   });
 }
 
-/** 件名は2行まで折り返す。それより長い分は「…」で省略する */
-const SUBJECT_MAX_LINES = 2;
 const SUBJECT_LABEL = "件名：";
 const SUBJECT_SIZE = 10.5;
 const RECIPIENT_SIZE = 13;
 
 /**
- * 上段・左の縦位置。件名が2行になったら、リード文とご請求金額をその分下げて重ならないようにする
+ * 上段・左の縦位置。件名は省略せずに折り返し、行が増えた分だけリード文・ご請求金額・明細を下げて重ならないようにする
  */
 export function layoutRecipientBlock(doc: Doc, s: InvoiceSnapshot) {
   const width = CONTENT_WIDTH * 0.52;
@@ -145,19 +145,18 @@ export function layoutRecipientBlock(doc: Doc, s: InvoiceSnapshot) {
   const subjectWidth = width - labelWidth;
   doc.font(REGULAR).fontSize(SUBJECT_SIZE);
   const subjectLineHeight = doc.currentLineHeight(true);
-  const subjectLines = Math.min(
-    SUBJECT_MAX_LINES,
-    Math.max(
-      1,
-      Math.round(
-        doc.heightOfString(subjectText(s), { width: subjectWidth }) /
-          subjectLineHeight,
-      ),
+  const subjectLines = Math.max(
+    1,
+    Math.round(
+      doc.heightOfString(subjectText(s), { width: subjectWidth }) /
+        subjectLineHeight,
     ),
   );
 
   const leadY = subjectY + mm(8) + (subjectLines - 1) * subjectLineHeight;
   const amountY = Math.max(mm(83), leadY + mm(10));
+  const amountUnderlineY = amountY + 15 * 1.45;
+  const itemsTop = Math.max(ITEMS_TOP, amountUnderlineY + mm(4));
   return {
     width,
     recipientY,
@@ -169,6 +168,8 @@ export function layoutRecipientBlock(doc: Doc, s: InvoiceSnapshot) {
     subjectLineHeight,
     leadY,
     amountY,
+    amountUnderlineY,
+    itemsTop,
   };
 }
 
@@ -210,9 +211,6 @@ function drawRecipientBlock(doc: Doc, s: InvoiceSnapshot) {
     size: SUBJECT_SIZE,
     width: layout.subjectWidth,
     lineBreak: true,
-    // 2行分の高さに収まらない分は「…」で省略する（端数で3行目が切れないよう少し余裕を持たせる）
-    height: layout.subjectLineHeight * (layout.subjectLines + 0.5),
-    ellipsis: true,
   });
 
   text(doc, "下記のとおりご請求申し上げます。", LEFT, layout.leadY);
@@ -225,13 +223,14 @@ function drawRecipientBlock(doc: Doc, s: InvoiceSnapshot) {
     width,
     align: "right",
   });
-  const underline = amountY + 15 * 1.45;
+  const underline = layout.amountUnderlineY;
   doc
     .moveTo(LEFT, underline)
     .lineTo(LEFT + width, underline)
     .lineWidth(1.1)
     .strokeColor(TEXT)
     .stroke();
+  return layout;
 }
 
 /** 上段・右: 事業主情報。データ印は屋号・氏名の右に置き、文字と重ねない */
@@ -278,8 +277,7 @@ function drawOwnerBlock(doc: Doc, s: InvoiceSnapshot, seal: Buffer | null) {
 }
 
 /** 中段: 明細（10 行）と合計。表の下端の y を返す */
-function drawItems(doc: Doc, s: InvoiceSnapshot) {
-  const top = mm(100);
+function drawItems(doc: Doc, s: InvoiceSnapshot, top: number) {
   const descriptionWidth =
     CONTENT_WIDTH - COL.quantity - COL.unitPrice - COL.amount;
   const xs = {

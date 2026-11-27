@@ -75,15 +75,24 @@ describe("上段・左の配置（件名が長いとき）", () => {
     expect(long.leadY - short.leadY).toBeCloseTo(long.subjectLineHeight);
   });
 
-  test("3行以上になる件名も2行に収め、宛名が2行でもご請求金額と明細に重ねない", () => {
+  test("3行以上になる件名も省略せずに折り返し、ご請求金額・明細をその分下げる", () => {
     const s = {
       ...veryLongSubject,
       client: { ...veryLongSubject.client, contactName: "佐藤 花子" },
     };
     const l = layout(s);
-    expect(l.subjectLines).toBe(2);
+    expect(l.subjectLines).toBeGreaterThanOrEqual(3);
+    expect(l.leadY).toBeGreaterThanOrEqual(
+      l.subjectY + l.subjectLineHeight * l.subjectLines,
+    );
     expect(l.amountY).toBeGreaterThanOrEqual(l.leadY + mm(10));
-    // ご請求金額の下線（金額の文字の下）が明細の上端（100mm）より上にある
-    expect(l.amountY + 15 * 1.45).toBeLessThan(mm(100));
+    // 明細はご請求金額の下線より下から始める
+    expect(l.itemsTop).toBeGreaterThan(l.amountUnderlineY);
+    expect(l.itemsTop).toBeGreaterThan(mm(100));
+  });
+
+  test("件名が短ければ明細は従来の位置（100mm）", () => {
+    expect(layout(sampleSnapshot).itemsTop).toBeCloseTo(mm(100));
+    expect(layout(longSubject).itemsTop).toBeCloseTo(mm(100));
   });
 });
