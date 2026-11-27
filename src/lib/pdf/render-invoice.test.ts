@@ -95,4 +95,20 @@ describe("上段・左の配置（件名が長いとき）", () => {
     expect(layout(sampleSnapshot).itemsTop).toBeCloseTo(mm(100));
     expect(layout(longSubject).itemsTop).toBeCloseTo(mm(100));
   });
+
+  test("上限（34文字）の件名は、記号や英単語が混ざっても期間込みで3行に収まる", () => {
+    const subjects = [
+      "あ".repeat(34),
+      "（「漢」）、。・ー".repeat(5).slice(0, 34),
+      "Web maintenance・改修（LP）、バナー制作一式と解析",
+      "maintenance".repeat(4).slice(0, 34),
+      "W".repeat(34),
+    ];
+    for (const subject of subjects) {
+      expect([...subject].length).toBeLessThanOrEqual(34);
+      expect(
+        layout({ ...longSubject, subject }).subjectLines,
+      ).toBeLessThanOrEqual(3);
+    }
+  });
 });

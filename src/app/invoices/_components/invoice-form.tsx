@@ -28,6 +28,7 @@ import type { InvoiceWithItems } from "@/lib/invoices/repository";
 import {
   itemFieldName,
   MAX_ITEMS,
+  SUBJECT_MAX_LENGTH,
   type InvoiceFormValues,
   type ItemFormValues,
 } from "@/lib/invoices/validation";
@@ -283,6 +284,8 @@ function InvoiceFields({
           label="件名"
           name="subject"
           required
+          maxLength={SUBJECT_MAX_LENGTH}
+          hint={`${SUBJECT_MAX_LENGTH}文字以内`}
           defaultValue={initial.subject}
           error={errors.subject}
         />
