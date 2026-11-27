@@ -90,3 +90,9 @@ test("キャンセルと Escape で閉じる", async () => {
   await userEvent.keyboard("{Escape}");
   expect(onClose).toHaveBeenCalledTimes(2);
 });
+
+test("請求書番号を入力して Enter を押しても削除しない（削除はボタンで行う）", async () => {
+  const { action } = renderDialog();
+  await userEvent.type(input(), "INV-ABC-202611-001{Enter}");
+  expect(action).not.toHaveBeenCalled();
+});
