@@ -216,6 +216,41 @@ export function saveInvoice(
   });
 }
 
+/**
+ * 請求書をコピーして新しい請求書を作り、その ID を返す（spec.md 7.1）。
+ * 内容はすべて引き継ぎ、請求番号は保存時と同じルールで採番する（確定前の請求書は連番に数えないため、
+ * 元と同じ番号になることがある。発行時にチェックする）
+ */
+export function copyInvoice(db: Db, id: number): number {
+  const source = getInvoice(db, id);
+  if (!source) throw new Error("請求書が見つかりません");
+  const result = saveInvoice(db, undefined, {
+    clientId: source.clientId,
+    ownerId: source.ownerId,
+    issueDate: source.issueDate,
+    subject: source.subject,
+    periodType: source.periodType,
+    periodMonth: source.periodMonth,
+    periodStart: source.periodStart,
+    periodEnd: source.periodEnd,
+    dueDate: source.dueDate,
+    dueDateManual: source.dueDateManual,
+    notes: source.notes,
+    taxMode: source.taxMode,
+    items: source.items.map(
+      ({ position, description, quantity, unit, unitPrice }) => ({
+        position,
+        description,
+        quantity,
+        unit,
+        unitPrice,
+      }),
+    ),
+  });
+  if (!result.ok) throw new Error("請求書のコピーに失敗しました");
+  return result.id;
+}
+
 export function archiveInvoice(db: Db, id: number) {
   db.update(invoices)
     .set({ archivedAt: new Date() })

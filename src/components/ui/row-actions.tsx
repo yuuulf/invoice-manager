@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, ArchiveRestore, Pencil, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, Copy, Pencil, Trash2 } from "lucide-react";
 import { ActionMenu, ActionMenuItem } from "./action-menu";
 import type { RowActionResult } from "@/lib/action-result";
 import { IconLink } from "./icon-button";
@@ -19,7 +19,7 @@ const menuIcon = "size-4";
 
 /**
  * 一覧の行の右端に置く操作（AGENTS.md「UI と文言」）。操作が失敗したらメッセージを表示する。
- * 通常の一覧: 編集アイコン＋メニュー（アーカイブ／削除）
+ * 通常の一覧: 編集アイコン＋メニュー（コピー（copyAction を渡したとき）／アーカイブ／削除）
  * アーカイブ一覧: メニュー（アーカイブを解除／削除）
  */
 export function RowActions({
@@ -30,6 +30,7 @@ export function RowActions({
   restoreAction,
   deleteAction,
   deleteConfirmMessage,
+  copyAction,
 }: {
   id: number;
   archived: boolean;
@@ -38,6 +39,8 @@ export function RowActions({
   restoreAction: RowAction;
   deleteAction: RowAction;
   deleteConfirmMessage: string;
+  /** 渡すと通常の一覧のメニューの先頭に「コピー」を出す */
+  copyAction?: (formData: FormData) => Promise<void>;
 }) {
   return (
     <div className="flex items-center justify-end gap-1">
@@ -49,6 +52,14 @@ export function RowActions({
         />
       )}
       <ActionMenu>
+        {!archived && copyAction && (
+          <form action={copyAction}>
+            <input type="hidden" name="id" value={id} />
+            <ActionMenuItem icon={<Copy className={menuIcon} aria-hidden />}>
+              コピー
+            </ActionMenuItem>
+          </form>
+        )}
         {archived ? (
           <form action={withErrorAlert(restoreAction)}>
             <input type="hidden" name="id" value={id} />

@@ -3,6 +3,7 @@ import { formatAmount } from "@/lib/invoices/calc";
 import type { InvoiceListRow } from "@/lib/invoices/repository";
 import {
   archiveInvoiceAction,
+  copyInvoiceAction,
   deleteInvoiceAction,
   restoreInvoiceAction,
 } from "../actions";
@@ -60,6 +61,7 @@ export function InvoiceTable({
                 archiveAction={archiveInvoiceAction}
                 restoreAction={restoreInvoiceAction}
                 deleteAction={deleteInvoiceAction}
+                copyAction={copyInvoiceAction}
                 deleteConfirmMessage={`請求書「${invoice.subject ?? invoice.invoiceNumber ?? "（件名なし）"}」を削除しますか？この操作は元に戻せません。`}
               />
             </td>

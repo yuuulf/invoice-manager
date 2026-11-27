@@ -6,6 +6,7 @@ vi.mock("../actions", () => ({
   archiveInvoiceAction: vi.fn(),
   restoreInvoiceAction: vi.fn(),
   deleteInvoiceAction: vi.fn(),
+  copyInvoiceAction: vi.fn(),
 }));
 
 test("請求番号・取引先・件名・請求日・合計を表示し、未採番はその旨を出す", () => {
