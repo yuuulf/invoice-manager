@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { FieldError } from "@/components/ui/field-error";
 import { inputFilterHandlers } from "@/components/ui/input-filter";
+import { BACK_PARAM, listHref } from "@/lib/list-query";
 import { FormActions, type FormMode } from "@/components/ui/form-actions";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { TextField } from "@/components/ui/text-field";
@@ -60,10 +61,13 @@ export function ClientForm({
   action,
   client,
   mode,
+  back = "",
 }: {
   action: Action;
   client?: Client;
   mode: FormMode;
+  /** 一覧に戻るときの条件（一覧の検索パラメータ） */
+  back?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, null);
   const values = state?.values ?? (client ? valuesOf(client) : newClientValues);
@@ -162,7 +166,12 @@ export function ClientForm({
           label: roundingLabels[value],
         }))}
       />
-      <FormActions mode={mode} cancelHref="/clients" pending={pending} />
+      <input type="hidden" name={BACK_PARAM} value={back} />
+      <FormActions
+        mode={mode}
+        cancelHref={listHref("/clients", back)}
+        pending={pending}
+      />
     </form>
   );
 }

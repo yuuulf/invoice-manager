@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
+import { getText } from "@/lib/form-data";
+import { BACK_PARAM, listHref } from "@/lib/list-query";
 import type { RowActionResult } from "@/lib/action-result";
 import {
   archiveClient,
@@ -40,7 +42,7 @@ export async function createClientAction(
     return { errors: result.errors, values: parsed.values };
   }
   revalidatePath("/clients", "layout");
-  redirect("/clients");
+  redirect(listHref("/clients", getText(formData, BACK_PARAM)));
 }
 
 export async function updateClientAction(
@@ -55,7 +57,7 @@ export async function updateClientAction(
     return { errors: result.errors, values: parsed.values };
   }
   revalidatePath("/clients", "layout");
-  redirect("/clients");
+  redirect(listHref("/clients", getText(formData, BACK_PARAM)));
 }
 
 export async function archiveClientAction(

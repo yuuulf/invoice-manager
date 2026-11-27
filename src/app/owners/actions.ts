@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
+import { getText } from "@/lib/form-data";
+import { BACK_PARAM, listHref } from "@/lib/list-query";
 import type { RowActionResult } from "@/lib/action-result";
 import {
   archiveOwner,
@@ -37,7 +39,7 @@ export async function createOwnerAction(
 
   createOwner(getDb(), parsed.data, parsed.seal);
   revalidatePath("/owners", "layout");
-  redirect("/owners");
+  redirect(listHref("/owners", getText(formData, BACK_PARAM)));
 }
 
 export async function updateOwnerAction(
@@ -49,7 +51,7 @@ export async function updateOwnerAction(
 
   updateOwner(getDb(), idFrom(formData), parsed.data, parsed.seal);
   revalidatePath("/owners", "layout");
-  redirect("/owners");
+  redirect(listHref("/owners", getText(formData, BACK_PARAM)));
 }
 
 export async function archiveOwnerAction(

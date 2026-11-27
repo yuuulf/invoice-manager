@@ -4,7 +4,10 @@ import {
   tableClass,
 } from "@/components/ui/data-table";
 import { RowActions } from "@/components/ui/row-actions";
+import { SortableHeader } from "@/components/ui/sortable-header";
 import type { Client } from "@/db/schema";
+import type { ClientSortKey } from "@/lib/clients/list-query";
+import { withBack, type ListView } from "@/lib/list-query";
 import {
   archiveClientAction,
   deleteClientAction,
@@ -14,16 +17,20 @@ import {
 export function ClientTable({
   clients,
   archived,
+  view,
 }: {
   clients: Client[];
   archived: boolean;
+  view: ListView<ClientSortKey>;
 }) {
   if (clients.length === 0) {
     return (
       <p className="text-zinc-500">
-        {archived
-          ? "アーカイブした取引先はありません。"
-          : "取引先が登録されていません。"}
+        {view.filtered
+          ? "条件に合う取引先はありません。"
+          : archived
+            ? "アーカイブした取引先はありません。"
+            : "取引先が登録されていません。"}
       </p>
     );
   }
@@ -32,12 +39,20 @@ export function ClientTable({
     <table className={tableClass}>
       <thead>
         <tr className="border-b border-zinc-300 text-left">
-          <th className={`${columnWidth.clientCode} px-3 py-2`}>
-            取引先コード
-          </th>
-          <th className="w-2/5 px-3 py-2">会社名</th>
-          <th className="px-3 py-2">部署</th>
-          <th className="px-3 py-2">担当者名</th>
+          <SortableHeader
+            {...view}
+            label="取引先コード"
+            sortKey="code"
+            className={columnWidth.clientCode}
+          />
+          <SortableHeader
+            {...view}
+            label="会社名"
+            sortKey="name"
+            className="w-2/5"
+          />
+          <SortableHeader {...view} label="部署" sortKey="department" />
+          <SortableHeader {...view} label="担当者名" sortKey="contactName" />
           <th className={`${columnWidth.actions} px-3 py-2`}>
             <span className="sr-only">操作</span>
           </th>
@@ -62,7 +77,7 @@ export function ClientTable({
               <RowActions
                 id={client.id}
                 archived={archived}
-                editHref={`/clients/${client.id}/edit`}
+                editHref={withBack(`/clients/${client.id}/edit`, view.query)}
                 archiveAction={archiveClientAction}
                 restoreAction={restoreClientAction}
                 deleteAction={deleteClientAction}

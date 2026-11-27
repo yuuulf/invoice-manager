@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
+import { getText } from "@/lib/form-data";
+import { BACK_PARAM, listHref } from "@/lib/list-query";
 import type { RowActionResult } from "@/lib/action-result";
 import {
   archiveInvoice,
@@ -71,7 +73,11 @@ async function submit(
   const saved = saveInvoice(getDb(), id, parsed.data);
   if (!saved.ok) return { errors: saved.errors, values: parsed.values };
   revalidatePath("/invoices", "layout");
-  redirect(output ? `/invoices/${saved.id}/preview` : "/invoices");
+  redirect(
+    output
+      ? `/invoices/${saved.id}/preview`
+      : listHref("/invoices", getText(formData, BACK_PARAM)),
+  );
 }
 
 export async function createInvoiceAction(

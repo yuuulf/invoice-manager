@@ -75,6 +75,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - アーカイブ一覧の各行: 編集アイコンは出さず、縦三点リーダーのメニューに「アーカイブを解除」「削除」を入れる
   - 元に戻せない操作（削除など）は `ActionMenuItem` の `confirmMessage` で確認してから実行する
   - テーブルは `@/components/ui/data-table` の `tableClass`（固定レイアウト）を使い、横スクロールさせない。切れてはいけない列（請求書番号・日付・金額・取引先コード）は `columnWidth` で幅を決めてセルに `whitespace-nowrap` を付け、残りの列は幅を分け合う。はみ出す文字は `ClampedText` で 1 行に収めて「…」にする
+  - 並べ替え・絞り込み（spec.md 3.2）: 列見出しは `SortableHeader`、絞り込み欄は `ListFilter`（ほかの条件は子要素で渡す）、件数・合計は `ListSummary`。条件は URL の検索パラメータに持たせ、読み取り・適用は `src/lib/<機能>/list-query.ts`（共通処理は `@/lib/list-query`）に書く
+  - 一覧から開く作成・編集画面の URL には `withBack` で一覧の条件（`back`）を付け、フォームは hidden の `back` とキャンセル先 `listHref(...)` を持ち、Server Action は `listHref(一覧のパス, back)` へリダイレクトする
   - 行の操作が失敗したとき（使用中で削除できない等）は、Server Action が `RowActionResult`（`{ error }`）を返し、`RowActions` がメッセージを表示する
 - 入力欄は `TextField` / `SelectField` / `TextAreaField` / `RadioGroup` を使う（ラベル・注釈・エラーの関連付けは `Field` が行う）
 - Server Action で送信するフォームの `SelectField` は `value` で固定しない。送信後に React がフォームをリセットすると選択が外れて見えるため、`defaultValue`（送信結果の値でフォームを作り直す）にし、`onChange` で state に反映する

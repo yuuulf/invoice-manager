@@ -2,6 +2,15 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { LedgerTable } from "./ledger-table";
+import type { LedgerSortKey } from "@/lib/ledger/list-query";
+import type { ListView } from "@/lib/list-query";
+
+const view: ListView<LedgerSortKey> = {
+  basePath: "/ledger",
+  sort: null,
+  query: "",
+  filtered: false,
+};
 
 vi.mock("../actions", () => ({
   copyLedgerAction: vi.fn(),
@@ -23,7 +32,7 @@ const entry = {
 };
 
 test("請求書番号・取引先・件名・請求日・合計・状態を表示する", () => {
-  render(<LedgerTable entries={[entry]} />);
+  render(<LedgerTable view={view} entries={[entry]} />);
   const row = screen.getAllByRole("row")[1];
   for (const text of [
     "INV-ABC-202611-001",
@@ -40,6 +49,7 @@ test("請求書番号・取引先・件名・請求日・合計・状態を表�
 test("未入金は送信日を、入金済みは入金日を状態の横に出す（spec.md 7.6）", () => {
   render(
     <LedgerTable
+      view={view}
       entries={[
         { ...entry, id: 2, sentOn: "2026-12-02" },
         { ...entry, id: 1, sentOn: "2026-12-02", paidOn: "2026-12-25" },
@@ -66,7 +76,7 @@ test("未入金は送信日を、入金済みは入金日を状態の横に出�
 });
 
 test("編集アイコンの右にメニューがあり、PDF出力はメニューからダウンロードする", async () => {
-  render(<LedgerTable entries={[entry]} />);
+  render(<LedgerTable view={view} entries={[entry]} />);
   const row = screen.getAllByRole("row")[1];
   expect(
     within(row).queryByRole("link", { name: "PDF出力" }),
@@ -87,6 +97,7 @@ test("編集アイコンの右にメニューがあり、PDF出力はメニュ�
 test("備考がある行だけ備考の列にアイコンを出す（spec.md 7.6）", () => {
   render(
     <LedgerTable
+      view={view}
       entries={[
         { ...entry, id: 2, memo: "取り消し。INV-ABC-202611-002 で再発行" },
         { ...entry, id: 1 },
@@ -105,7 +116,7 @@ test("備考がある行だけ備考の列にアイコンを出す（spec.md 7.6
 });
 
 test("送信ファイルがあれば、メニューから新しいタブで開ける", async () => {
-  const { rerender } = render(<LedgerTable entries={[entry]} />);
+  const { rerender } = render(<LedgerTable view={view} entries={[entry]} />);
   await userEvent.click(screen.getByRole("button", { name: "その他の操作" }));
   expect(
     screen.queryByRole("menuitem", { name: "送信ファイルを開く" }),
@@ -115,6 +126,7 @@ test("送信ファイルがあれば、メニューから新しいタブで開�
   const url = "https://drive.google.com/file/d/abc/view";
   rerender(
     <LedgerTable
+      view={view}
       entries={[{ ...entry, sentOn: "2026-12-02", sentFileUrl: url }]}
     />,
   );
@@ -133,13 +145,15 @@ test("送信ファイルがあれば、メニューから新しいタブで開�
 });
 
 test("送信済みの台帳は削除を押せない（spec.md 7.6）", async () => {
-  render(<LedgerTable entries={[{ ...entry, sentOn: "2026-11-30" }]} />);
+  render(
+    <LedgerTable view={view} entries={[{ ...entry, sentOn: "2026-11-30" }]} />,
+  );
   await userEvent.click(screen.getByRole("button", { name: "その他の操作" }));
   expect(screen.getByRole("menuitem", { name: /削除/ })).toBeDisabled();
 });
 
 test("メニューに PDF出力・請求書にコピー・削除があり、削除は請求書番号の入力で確認する", async () => {
-  render(<LedgerTable entries={[entry]} />);
+  render(<LedgerTable view={view} entries={[entry]} />);
   await userEvent.click(screen.getByRole("button", { name: "その他の操作" }));
   const items = within(screen.getByRole("menu")).getAllByRole("menuitem");
   expect(items.map((i) => i.textContent)).toEqual([
@@ -155,6 +169,39 @@ test("メニューに PDF出力・請求書にコピー・削除があり、削�
 });
 
 test("0件のときは案内を表示する", () => {
-  render(<LedgerTable entries={[]} />);
+  render(<LedgerTable view={view} entries={[]} />);
   expect(screen.getByText("確定した請求書はありません。")).toBeInTheDocument();
+});
+
+test("列見出しで並べ替えでき、編集アイコンには一覧に戻るための条件を付ける", () => {
+  render(
+    <LedgerTable
+      entries={[entry]}
+      view={{
+        ...view,
+        sort: { key: "total", order: "asc" },
+        query: "q=保守&sort=total&order=asc",
+      }}
+    />,
+  );
+  expect(screen.getByRole("columnheader", { name: /合計/ })).toHaveAttribute(
+    "aria-sort",
+    "ascending",
+  );
+  expect(screen.getByRole("link", { name: /状態/ })).toHaveAttribute(
+    "href",
+    `/ledger?${new URLSearchParams({ q: "保守", sort: "status", order: "asc" })}`,
+  );
+  const edit = screen.getByRole("link", { name: "編集" });
+  const back = new URL(
+    edit.getAttribute("href")!,
+    "http://localhost",
+  ).searchParams.get("back");
+  expect(edit.getAttribute("href")).toMatch(/^\/ledger\/3\/edit\?/);
+  expect(back).toBe("q=保守&sort=total&order=asc");
+});
+
+test("絞り込んで0件なら、条件に合うものがない旨を出す", () => {
+  render(<LedgerTable entries={[]} view={{ ...view, filtered: true }} />);
+  expect(screen.getByText("条件に合う台帳はありません。")).toBeInTheDocument();
 });

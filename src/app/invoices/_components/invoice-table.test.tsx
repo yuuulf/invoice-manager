@@ -1,6 +1,15 @@
 import { render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { InvoiceTable } from "./invoice-table";
+import type { InvoiceSortKey } from "@/lib/invoices/list-query";
+import type { ListView } from "@/lib/list-query";
+
+const view: ListView<InvoiceSortKey> = {
+  basePath: "/invoices",
+  sort: null,
+  query: "",
+  filtered: false,
+};
 
 vi.mock("../actions", () => ({
   archiveInvoiceAction: vi.fn(),
@@ -12,6 +21,7 @@ vi.mock("../actions", () => ({
 test("請求書番号・取引先・件名・請求日・合計を表示し、未採番はその旨を出す", () => {
   render(
     <InvoiceTable
+      view={view}
       archived={false}
       invoices={[
         {
@@ -51,9 +61,11 @@ test("請求書番号・取引先・件名・請求日・合計を表示し、�
 });
 
 test("0件のときは案内を表示する", () => {
-  const { rerender } = render(<InvoiceTable invoices={[]} archived={false} />);
+  const { rerender } = render(
+    <InvoiceTable view={view} invoices={[]} archived={false} />,
+  );
   expect(screen.getByText("作成中の請求書はありません。")).toBeInTheDocument();
-  rerender(<InvoiceTable invoices={[]} archived />);
+  rerender(<InvoiceTable view={view} invoices={[]} archived />);
   expect(
     screen.getByText("アーカイブした請求書はありません。"),
   ).toBeInTheDocument();
@@ -62,6 +74,7 @@ test("0件のときは案内を表示する", () => {
 test("取引先・件名は 1 行で省略し、請求書番号・請求日・合計は切らずに表示する", () => {
   render(
     <InvoiceTable
+      view={view}
       archived={false}
       invoices={[
         {

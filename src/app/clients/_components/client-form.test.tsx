@@ -125,3 +125,16 @@ test("文字数の上限を超えても入力でき、フォーカスアウト�
     "英大文字・数字の3桁（例: ABC、A1B） 取引先コードは英大文字・数字の3桁で入力してください",
   );
 });
+
+test("一覧の条件（back）を持ち、キャンセルでその条件の一覧に戻る", () => {
+  const { container } = render(
+    <ClientForm action={vi.fn()} mode="create" back="q=abc&sort=name" />,
+  );
+  expect(
+    container.querySelector('input[type="hidden"][name="back"]'),
+  ).toHaveValue("q=abc&sort=name");
+  expect(screen.getByRole("link", { name: "キャンセル" })).toHaveAttribute(
+    "href",
+    "/clients?q=abc&sort=name",
+  );
+});
