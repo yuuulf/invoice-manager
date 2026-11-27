@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -24,7 +25,11 @@ export function SidebarNav({ pathname }: { pathname: string | null }) {
       aria-label="メインメニュー"
       className="w-48 shrink-0 border-r border-zinc-200 bg-zinc-50"
     >
-      <p className="px-4 py-5 text-lg font-bold">請求書管理</p>
+      <p className="flex items-center gap-2 px-4 py-5 text-lg font-bold">
+        {/* 文字の「請求書管理」で名前が伝わるため、ロゴは装飾として読み上げない */}
+        <Image src="/logo.png" alt="" width={28} height={28} priority />
+        請求書管理
+      </p>
       <ul>
         {navItems.map(({ href, label }) => {
           const active = pathname !== null && isActive(pathname, href);
