@@ -6,6 +6,7 @@ import { getDb } from "@/db";
 import type { RowActionResult } from "@/lib/action-result";
 import {
   archiveInvoice,
+  copyInvoice,
   deleteInvoice,
   restoreInvoice,
   saveInvoice,
@@ -131,6 +132,13 @@ export async function confirmInvoiceAction(
   revalidatePath("/ledger", "layout");
   // 元の請求書は消えるため、台帳の画面に移ってからダウンロードする
   redirect(`/ledger?download=${confirmed.ledgerId}`);
+}
+
+/** 請求書をコピーし、コピーした請求書の編集画面を開く（spec.md 7.1） */
+export async function copyInvoiceAction(formData: FormData): Promise<void> {
+  const copiedId = copyInvoice(getDb(), idFrom(formData));
+  revalidatePath("/invoices", "layout");
+  redirect(`/invoices/${copiedId}/edit`);
 }
 
 export async function archiveInvoiceAction(

@@ -85,3 +85,25 @@ test("操作が成功したらメッセージは出さない", async () => {
   await vi.waitFor(() => expect(archiveAction).toHaveBeenCalled());
   expect(alert).not.toHaveBeenCalled();
 });
+
+test("copyAction を渡すと、通常の一覧のメニューの先頭に「コピー」を出す", async () => {
+  const copyAction = vi.fn(async () => undefined);
+  render(
+    <RowActions
+      id={3}
+      archived={false}
+      editHref="/invoices/3/edit"
+      archiveAction={vi.fn(async () => undefined)}
+      restoreAction={vi.fn(async () => undefined)}
+      deleteAction={vi.fn(async () => undefined)}
+      deleteConfirmMessage="削除しますか？"
+      copyAction={copyAction}
+    />,
+  );
+  await userEvent.click(screen.getByRole("button", { name: "その他の操作" }));
+  expect(menuItemNames()).toEqual(["コピー", "アーカイブ", "削除"]);
+  await userEvent.click(screen.getByRole("menuitem", { name: "コピー" }));
+  expect(copyAction).toHaveBeenCalledTimes(1);
+  const formData = (copyAction.mock.calls[0] as unknown[])[0] as FormData;
+  expect(formData.get("id")).toBe("3");
+});

@@ -71,7 +71,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - UI コンポーネントは共通コンポーネント（ボタン、入力欄、テーブル、ダイアログ等）を作って再利用し、画面ごとに見た目や振る舞いをばらつかせない。`src/components/ui/` にあるものは必ずそれを使い、足りなければそこに追加する
 - 一覧画面の操作は次の配置で統一する（アイコンは `lucide-react`、アイコンだけのボタンは `IconButton` / `IconLink` で操作名を `label` に渡す）
   - ページ見出しの右: 「作成」ボタン、その右にアーカイブ一覧への切り替え（アーカイブアイコンのみ。`ArchiveToggle`、`?view=archived`）
-  - 一覧の各行の右端: 編集アイコンボタン、その右に縦三点リーダーのアイコンボタン（`ActionMenu`）。メニューには「アーカイブ」「削除」を入れる。アーカイブ・削除がある一覧は `RowActions` を使う
+  - 一覧の各行の右端: 編集アイコンボタン、その右に縦三点リーダーのアイコンボタン（`ActionMenu`）。メニューには「アーカイブ」「削除」を入れる（請求書一覧は先頭に「コピー」も。`RowActions` の `copyAction`）。アーカイブ・削除がある一覧は `RowActions` を使う
   - アーカイブ一覧の各行: 編集アイコンは出さず、縦三点リーダーのメニューに「アーカイブを解除」「削除」を入れる
   - 元に戻せない操作（削除など）は `ActionMenuItem` の `confirmMessage` で確認してから実行する
   - 行の操作が失敗したとき（使用中で削除できない等）は、Server Action が `RowActionResult`（`{ error }`）を返し、`RowActions` がメッセージを表示する

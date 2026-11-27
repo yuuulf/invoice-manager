@@ -8,6 +8,7 @@ import {
   getInvoice,
   isClientInUse,
   isOwnerInUse,
+  copyInvoice,
   listInvoices,
   restoreInvoice,
   saveInvoice,
@@ -248,4 +249,57 @@ test("calcTotal は数量か単価が未入力の行を除いて合計する", (
       "floor",
     ),
   ).toBe(74000);
+});
+
+describe("コピー（spec.md 7.1）", () => {
+  test("内容をすべて引き継いだ新しい請求書を作る", () => {
+    const clientId = insertClient(db);
+    const ownerId = insertOwner(db);
+    const { id } = save(undefined, {
+      clientId,
+      ownerId,
+      issueDate: "2026-11-30",
+      subject: "Webサイト保守",
+      periodType: "month",
+      periodMonth: "2026-11",
+      dueDate: "2027-01-10",
+      dueDateManual: true,
+      notes: "備考",
+      taxMode: "included",
+      items: [
+        {
+          position: 1,
+          description: "保守",
+          quantity: 150,
+          unit: "時間",
+          unitPrice: 5000,
+        },
+      ],
+    });
+    const copiedId = copyInvoice(db, id);
+    expect(copiedId).not.toBe(id);
+    // ID・作成日時などを除いた内容が同じ
+    const content = (invoiceId: number) => {
+      const {
+        id: _id,
+        createdAt: _c,
+        updatedAt: _u,
+        items,
+        ...fields
+      } = getInvoice(db, invoiceId)!;
+      return {
+        ...fields,
+        items: items.map(({ id: _i, invoiceId: _v, ...item }) => item),
+      };
+    };
+    expect(content(copiedId)).toEqual(content(id));
+  });
+
+  test("元の請求書はそのまま残る", () => {
+    const { id } = save(undefined, { subject: "元" });
+    copyInvoice(db, id);
+    expect(listInvoices(db, { archived: false }).map((r) => r.subject)).toEqual(
+      ["元", "元"],
+    );
+  });
 });
