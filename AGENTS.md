@@ -76,6 +76,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - 元に戻せない操作（削除など）は `ActionMenuItem` の `confirmMessage` で確認してから実行する
   - 行の操作が失敗したとき（使用中で削除できない等）は、Server Action が `RowActionResult`（`{ error }`）を返し、`RowActions` がメッセージを表示する
 - 入力欄は `TextField` / `SelectField` / `TextAreaField` / `RadioGroup` を使う（ラベル・注釈・エラーの関連付けは `Field` が行う）
+- 必須項目は `required` を渡すと、ラベルの後ろに赤い `*` が付く（`RequiredMark`。読み上げでは「必須」）。「必須」の文字は表示しない
 - 項目が多いフォームは `FormSection` でまとまり（例: 基本情報、振込先）に分ける
 - フォーム全体に関わるエラー（例: 必須項目が足りず出力できない）は `FormMessage` で先頭に表示する
 - 取り消せない重要な操作（台帳の削除など）は `TypedConfirmDialog` で決められた文字列（請求番号など）を入力させてから実行する
