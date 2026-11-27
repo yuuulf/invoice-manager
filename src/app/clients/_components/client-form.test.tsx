@@ -88,3 +88,41 @@ test("送信すると入力内容をアクションに渡し、返ってきた�
     "ABC",
   );
 });
+
+test("取引先コードは英大文字・数字の3桁まで入力でき、小文字は大文字にする", async () => {
+  render(<ClientForm action={vi.fn()} mode="create" />);
+  const code = screen.getByRole("textbox", { name: /取引先コード/ });
+  await userEvent.type(code, "a-1bc");
+  expect(code).toHaveValue("A1B");
+});
+
+test("翌月N日のNは数字2桁まで", async () => {
+  render(<ClientForm action={vi.fn()} mode="create" />);
+  const day = screen.getByRole("textbox", { name: "翌月 N 日の N" });
+  await userEvent.type(day, "1x23");
+  expect(day).toHaveValue("12");
+});
+
+test("文字数の上限まで入力でき、フォーカスアウトでエラーを表示する", async () => {
+  render(<ClientForm action={vi.fn()} mode="create" />);
+  const name = screen.getByRole("textbox", { name: /会社名/ });
+  expect(name).toHaveAttribute("maxLength", "40");
+  expect(screen.getByRole("textbox", { name: /部署/ })).toHaveAttribute(
+    "maxLength",
+    "20",
+  );
+  expect(screen.getByRole("textbox", { name: /担当者名/ })).toHaveAttribute(
+    "maxLength",
+    "20",
+  );
+  await userEvent.click(name);
+  await userEvent.tab();
+  expect(name).toHaveAccessibleDescription("会社名を入力してください");
+
+  const code = screen.getByRole("textbox", { name: /取引先コード/ });
+  await userEvent.type(code, "AB");
+  await userEvent.tab();
+  expect(code).toHaveAccessibleDescription(
+    "英大文字・数字の3桁（例: ABC、A1B） 取引先コードは英大文字・数字の3桁で入力してください",
+  );
+});

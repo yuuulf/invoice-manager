@@ -5,10 +5,17 @@ import { FormActions, type FormMode } from "@/components/ui/form-actions";
 import { FormSection } from "@/components/ui/form-section";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { TextField } from "@/components/ui/text-field";
+import { useBlurValidation } from "@/components/ui/use-blur-validation";
 import { accountTypes } from "@/db/schema";
 import { accountTypeLabels } from "@/lib/owners/labels";
 import type { OwnerSummary } from "@/lib/owners/repository";
-import type { OwnerFormValues } from "@/lib/owners/validation";
+import {
+  OWNER_MAX_LENGTHS,
+  readOwnerValues,
+  validateOwnerField,
+  type OwnerFormValues,
+} from "@/lib/owners/validation";
+import { digitsOnly } from "@/lib/text-rules";
 import type { OwnerFormState } from "../actions";
 import { SealField } from "./seal-field";
 
@@ -54,15 +61,28 @@ export function OwnerForm({
 }) {
   const [state, formAction, pending] = useActionState(action, null);
   const values = state?.values ?? (owner ? valuesOf(owner) : newOwnerValues);
-  const errors = state?.errors ?? {};
+  const { errors, onBlur } = useBlurValidation(
+    state,
+    state?.errors ?? {},
+    (name, formData) => validateOwnerField(name, readOwnerValues(formData)),
+  );
   const field = (name: keyof OwnerFormValues) => ({
     name,
     defaultValue: values[name],
     error: errors[name],
+    maxLength: OWNER_MAX_LENGTHS[name as keyof typeof OWNER_MAX_LENGTHS],
   });
+  /** 入力制限: 数字だけを、決まった桁数まで */
+  const digits = (length: number) => (value: string) =>
+    digitsOnly(value).slice(0, length);
 
   return (
-    <form action={formAction} noValidate className="max-w-xl space-y-10">
+    <form
+      action={formAction}
+      onBlur={onBlur}
+      noValidate
+      className="max-w-xl space-y-10"
+    >
       {owner && <input type="hidden" name="id" value={owner.id} />}
       <FormSection title="基本情報">
         <TextField label="屋号" {...field("tradeName")} />
@@ -71,7 +91,7 @@ export function OwnerForm({
           label="郵便番号"
           required
           inputMode="numeric"
-          maxLength={7}
+          inputFilter={digits(7)}
           hint="ハイフンなしの7桁（例: 1500001）"
           className="w-32"
           {...field("postalCode")}
@@ -98,7 +118,7 @@ export function OwnerForm({
           label="銀行番号"
           required
           inputMode="numeric"
-          maxLength={4}
+          inputFilter={digits(4)}
           hint="4桁の数字"
           {...field("bankCode")}
         />
@@ -107,7 +127,7 @@ export function OwnerForm({
           label="支店番号"
           required
           inputMode="numeric"
-          maxLength={3}
+          inputFilter={digits(3)}
           hint="3桁の数字"
           {...field("branchCode")}
         />
@@ -126,7 +146,7 @@ export function OwnerForm({
           label="口座番号"
           required
           inputMode="numeric"
-          maxLength={7}
+          inputFilter={digits(7)}
           hint="7桁の数字"
           {...field("accountNumber")}
         />

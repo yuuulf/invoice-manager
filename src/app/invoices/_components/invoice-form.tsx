@@ -10,6 +10,7 @@ import { RadioGroup } from "@/components/ui/radio-group";
 import { SelectField } from "@/components/ui/select-field";
 import { TextAreaField } from "@/components/ui/text-area-field";
 import { TextField } from "@/components/ui/text-field";
+import { useBlurValidation } from "@/components/ui/use-blur-validation";
 import { taxModes, type Client, type TaxMode } from "@/db/schema";
 import {
   basisMonthOf,
@@ -30,11 +31,14 @@ import { roundingLabels } from "@/lib/clients/labels";
 import { taxModeLabels } from "@/lib/invoices/labels";
 import type { InvoiceWithItems } from "@/lib/invoices/repository";
 import {
+  ITEM_MAX_LENGTHS,
   itemFieldName,
   MAX_ITEMS,
   NOTES_LINE_WIDTH,
   NOTES_MAX_LINES,
+  readInvoiceValues,
   SUBJECT_MAX_LENGTH,
+  validateInvoiceField,
   type InvoiceFormValues,
   type ItemFormValues,
 } from "@/lib/invoices/validation";
@@ -158,16 +162,26 @@ export function InvoiceForm({
   const [state, formAction, pending] = useActionState(action, null);
   const values =
     state?.values ?? (invoice ? valuesOf(invoice) : newInvoiceValues(today));
+  const { errors, onBlur } = useBlurValidation(
+    state,
+    state?.errors ?? {},
+    (name, formData) => validateInvoiceField(name, readInvoiceValues(formData)),
+  );
 
   return (
-    <form action={formAction} noValidate className="max-w-4xl space-y-10">
+    <form
+      action={formAction}
+      onBlur={onBlur}
+      noValidate
+      className="max-w-4xl space-y-10"
+    >
       {invoice && <input type="hidden" name="id" value={invoice.id} />}
       <FormMessage message={state?.message} />
       {/* 送信結果が返ったら、返ってきた値で入力欄を作り直す */}
       <InvoiceFields
         key={JSON.stringify(state)}
         initial={values}
-        errors={state?.errors ?? {}}
+        errors={errors}
         invoiceNumber={invoice?.invoiceNumber ?? null}
         clients={clients}
         owners={owners}
@@ -208,7 +222,7 @@ function InvoiceFields({
   owners,
 }: {
   initial: InvoiceFormValues;
-  errors: Record<string, string>;
+  errors: Record<string, string | undefined>;
   invoiceNumber: string | null;
   clients: ClientOption[];
   owners: OwnerOption[];
@@ -456,7 +470,7 @@ function ItemsTable({
   amounts: (number | null)[];
   /** 取引先が未選択なら null */
   totals: Totals | null;
-  errors: Record<string, string>;
+  errors: Record<string, string | undefined>;
   onChange: (
     position: number,
     key: keyof ItemFormValues,
@@ -489,6 +503,7 @@ function ItemsTable({
                 : undefined
           }
           value={items[position][key]}
+          maxLength={ITEM_MAX_LENGTHS[key]}
           onChange={(e) => onChange(position, key, e.target.value)}
           className={`${cellInput} ${numeric ? "text-right" : ""}`}
         />

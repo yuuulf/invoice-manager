@@ -249,6 +249,56 @@ describe("備考", () => {
   });
 });
 
+describe("文字数の上限とフォーカスアウトのチェック", () => {
+  test("明細は内容60・数量15・単位10・単価10文字まで入力できる", () => {
+    renderNew();
+    const limits: [string, string][] = [
+      ["1行目の内容", "60"],
+      ["1行目の数量", "15"],
+      ["1行目の単位", "10"],
+      ["1行目の単価", "10"],
+    ];
+    for (const [name, max] of limits) {
+      expect(screen.getByRole("textbox", { name })).toHaveAttribute(
+        "maxLength",
+        max,
+      );
+    }
+  });
+
+  test("フォーカスアウトで形式をチェックし、直したら消す", async () => {
+    renderNew();
+    const quantity = screen.getByRole("textbox", { name: "1行目の数量" });
+    await userEvent.type(quantity, "1.234");
+    await userEvent.tab();
+    expect(quantity).toHaveAccessibleDescription(
+      "数量は0以上の数値（小数第2位まで）で入力してください",
+    );
+    await userEvent.clear(quantity);
+    await userEvent.type(quantity, "1.5");
+    await userEvent.tab();
+    expect(quantity).toBeValid();
+  });
+
+  test("未入力はフォーカスアウトではエラーにしない（必須はPDF出力時）", async () => {
+    renderNew();
+    const subject = screen.getByRole("textbox", { name: /件名/ });
+    await userEvent.click(subject);
+    await userEvent.tab();
+    expect(subject).not.toHaveAttribute("aria-invalid");
+  });
+
+  test("備考は5行を超えるとフォーカスアウトでエラー", async () => {
+    renderNew();
+    const notes = screen.getByRole("textbox", { name: "備考" });
+    fireEvent.change(notes, { target: { value: "1\n2\n3\n4\n5\n6" } });
+    fireEvent.blur(notes);
+    expect(notes).toHaveAccessibleDescription(
+      "1行50文字（半角は0.5文字）で折り返して5行まで 備考は1行50文字で折り返して5行以内で入力してください",
+    );
+  });
+});
+
 describe("送信", () => {
   test("入力内容と手動変更の有無をアクションに渡す", async () => {
     const action = renderNew();

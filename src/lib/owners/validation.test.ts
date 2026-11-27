@@ -169,3 +169,53 @@ describe("parseOwnerForm", () => {
     expect(result.ok && result.seal.type).toBe("replace");
   });
 });
+
+describe("文字数の上限（spec.md 6）", () => {
+  const limits: [string, string, number][] = [
+    ["tradeName", "屋号", 20],
+    ["name", "氏名", 20],
+    ["address1", "住所（1行目）", 20],
+    ["address2", "住所（2行目）", 20],
+    ["bankName", "銀行名", 40],
+    ["branchName", "支店名", 40],
+    ["accountHolder", "口座名義", 50],
+  ];
+  test.each(limits)("%s（%s）は%i文字まで", async (key, label, max) => {
+    expect((await parseOwnerForm(form({ [key]: "あ".repeat(max) }))).ok).toBe(
+      true,
+    );
+    expect(
+      await parseOwnerForm(form({ [key]: "あ".repeat(max + 1) })),
+    ).toMatchObject({
+      ok: false,
+      errors: { [key]: `${label}は${max}文字以内で入力してください` },
+    });
+  });
+
+  test("電話番号は15文字・メールアドレスは254文字まで", async () => {
+    expect(
+      (
+        await parseOwnerForm(
+          form({
+            phone: "090-1234-56789",
+            email: `${"a".repeat(242)}@example.com`,
+          }),
+        )
+      ).ok,
+    ).toBe(true);
+    expect(
+      await parseOwnerForm(
+        form({
+          phone: "0120-1234-567890",
+          email: `${"a".repeat(243)}@example.com`,
+        }),
+      ),
+    ).toMatchObject({
+      ok: false,
+      errors: {
+        phone: "電話番号は15文字以内で入力してください",
+        email: "メールアドレスは254文字以内で入力してください",
+      },
+    });
+  });
+});
