@@ -15,7 +15,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={<SidebarNav pathname={null} />}>
           <Sidebar />
         </Suspense>
-        <main className="flex-1 p-8">{children}</main>
+        <main className="min-w-0 flex-1 p-8">{children}</main>
       </body>
     </html>
   );
