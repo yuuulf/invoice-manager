@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import type { Client, InvoiceItem, Owner } from "@/db/schema";
 import type { InvoiceWithItems } from "./repository";
-import { buildSnapshot, checkCompleteness } from "./snapshot";
+import { buildSnapshot, checkCompleteness, totalsOf } from "./snapshot";
 
 const client: Client = {
   id: 1,
@@ -71,6 +71,7 @@ function invoice(overrides: Partial<InvoiceWithItems> = {}): InvoiceWithItems {
     dueDate: "2026-12-31",
     dueDateManual: false,
     notes: "いつもお世話になっております。",
+    taxMode: "excluded",
     archivedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -192,6 +193,32 @@ describe("buildSnapshot", () => {
     expect(snapshot.owner).not.toHaveProperty("seal");
   });
 
+  test("税抜なら小計がそのまま合計で、消費税相当額はない", () => {
+    const snapshot = buildSnapshot(
+      invoice({ items: [item(0, { quantity: 100, unitPrice: 110000 })] }),
+      client,
+      owner,
+    );
+    expect(snapshot).toMatchObject({
+      subtotal: 110000,
+      tax: null,
+      total: 110000,
+    });
+  });
+
+  test("税込なら小計の10%（取引先の端数処理）を消費税相当額として合計に足す", () => {
+    const snapshot = buildSnapshot(
+      invoice({
+        taxMode: "included",
+        items: [item(0, { quantity: 100, unitPrice: 1235 })],
+      }),
+      { ...client, rounding: "ceil" },
+      owner,
+    );
+    // 1235 × 10% = 123.5 → 切り上げ 124
+    expect(snapshot).toMatchObject({ subtotal: 1235, tax: 124, total: 1359 });
+  });
+
   test("必須項目がそろっていなければ作れない", () => {
     expect(() =>
       buildSnapshot(invoice({ subject: null }), client, owner),
@@ -199,5 +226,18 @@ describe("buildSnapshot", () => {
     expect(() =>
       buildSnapshot(invoice({ invoiceNumber: null }), client, owner),
     ).toThrow();
+  });
+});
+
+describe("totalsOf", () => {
+  test("消費税の扱いを追加する前の台帳（小計・消費税相当額なし）は税抜として読む", () => {
+    const old = buildSnapshot(invoice(), client, owner);
+    delete old.subtotal;
+    delete old.tax;
+    expect(totalsOf(old)).toEqual({
+      subtotal: old.total,
+      tax: null,
+      total: old.total,
+    });
   });
 });

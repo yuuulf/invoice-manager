@@ -1,4 +1,9 @@
-import { periodTypes, type PeriodType } from "@/db/schema";
+import {
+  periodTypes,
+  taxModes,
+  type PeriodType,
+  type TaxMode,
+} from "@/db/schema";
 import { getText, isOneOf } from "@/lib/form-data";
 import {
   isValidDate,
@@ -35,6 +40,8 @@ export type InvoiceDraftInput = {
   dueDate: string | null;
   dueDateManual: boolean;
   notes: string | null;
+  /** 消費税の扱い（税抜／税込） */
+  taxMode: TaxMode;
   /** 何か入力のある行だけ */
   items: InvoiceItemInput[];
 };
@@ -58,6 +65,7 @@ export type InvoiceFormValues = {
   dueDate: string;
   dueDateManual: boolean;
   notes: string;
+  taxMode: string;
   items: ItemFormValues[];
 };
 
@@ -85,6 +93,7 @@ function readValues(formData: FormData): InvoiceFormValues {
     dueDate: text("dueDate"),
     dueDateManual: formData.get("dueDateManual") === "true",
     notes: getNotes(formData),
+    taxMode: text("taxMode"),
     items: Array.from({ length: MAX_ITEMS }, (_, i) => ({
       description: text(itemFieldName(i, "description")),
       quantity: text(itemFieldName(i, "quantity")),
@@ -159,6 +168,14 @@ export function parseInvoiceForm(formData: FormData): InvoiceParseResult {
     }
   }
 
+  // 未送信なら税抜（spec.md 7.1 のデフォルト）
+  const taxMode: TaxMode | null = !values.taxMode
+    ? "excluded"
+    : isOneOf(taxModes, values.taxMode)
+      ? values.taxMode
+      : null;
+  if (taxMode === null) errors.taxMode = "消費税を選択してください";
+
   const items: InvoiceItemInput[] = [];
   values.items.forEach((item, position) => {
     const quantity = item.quantity ? parseQuantity(item.quantity) : null;
@@ -201,6 +218,7 @@ export function parseInvoiceForm(formData: FormData): InvoiceParseResult {
       dueDate: orNull(values.dueDate),
       dueDateManual: values.dueDateManual,
       notes: orNull(values.notes),
+      taxMode: taxMode!,
       items,
     },
   };

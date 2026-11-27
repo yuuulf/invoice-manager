@@ -10,20 +10,24 @@ import { RadioGroup } from "@/components/ui/radio-group";
 import { SelectField } from "@/components/ui/select-field";
 import { TextAreaField } from "@/components/ui/text-area-field";
 import { TextField } from "@/components/ui/text-field";
-import type { Client } from "@/db/schema";
+import { taxModes, type Client, type TaxMode } from "@/db/schema";
 import {
   basisMonthOf,
   calcAmount,
   calcDueDate,
+  calcTotals,
   formatAmount,
   formatQuantity,
   isValidDate,
   isValidMonth,
   parseQuantity,
   parseUnitPrice,
+  TAX_RATE,
   type Period,
+  type Totals,
 } from "@/lib/invoices/calc";
 import { roundingLabels } from "@/lib/clients/labels";
+import { taxModeLabels } from "@/lib/invoices/labels";
 import type { InvoiceWithItems } from "@/lib/invoices/repository";
 import {
   itemFieldName,
@@ -66,6 +70,7 @@ function newInvoiceValues(today: string): InvoiceFormValues {
     dueDate: "",
     dueDateManual: false,
     notes: "",
+    taxMode: "excluded",
     items: Array.from({ length: MAX_ITEMS }, () => emptyItem),
   };
 }
@@ -94,6 +99,7 @@ function valuesOf(invoice: InvoiceWithItems): InvoiceFormValues {
     dueDate: invoice.dueDate ?? "",
     dueDateManual: invoice.dueDateManual,
     notes: invoice.notes ?? "",
+    taxMode: invoice.taxMode,
     items,
   };
 }
@@ -117,6 +123,10 @@ function periodFrom(values: {
     return { type: "range", start: values.periodStart, end: values.periodEnd };
   }
   return null;
+}
+
+function isTaxMode(value: string): value is TaxMode {
+  return (taxModes as readonly string[]).includes(value);
 }
 
 /** 明細行の金額。数量・単価がそろわない、または取引先が未選択なら null */
@@ -211,6 +221,7 @@ function InvoiceFields({
   const [dueDate, setDueDate] = useState(initial.dueDate);
   const [dueDateManual, setDueDateManual] = useState(initial.dueDateManual);
   const [items, setItems] = useState(initial.items);
+  const [taxMode, setTaxMode] = useState(initial.taxMode);
 
   const client = clients.find((c) => String(c.id) === clientId);
   const validPeriod = periodFrom(period);
@@ -221,8 +232,12 @@ function InvoiceFields({
   const shownDueDate = dueDateManual ? dueDate : (autoDueDate ?? dueDate);
 
   const amounts = items.map((item) => amountOf(item, client));
-  const total = client
-    ? amounts.reduce<number>((sum, amount) => sum + (amount ?? 0), 0)
+  const totals = client
+    ? calcTotals(
+        amounts.reduce<number>((sum, amount) => sum + (amount ?? 0), 0),
+        isTaxMode(taxMode) ? taxMode : "excluded",
+        client.rounding,
+      )
     : null;
 
   const updatePeriod = (key: keyof typeof period, value: string) =>
@@ -381,10 +396,23 @@ function InvoiceFields({
       </FormSection>
 
       <FormSection title="明細">
+        <RadioGroup
+          legend="消費税"
+          name="taxMode"
+          required
+          value={taxMode}
+          onValueChange={setTaxMode}
+          error={errors.taxMode}
+          hint={`税込にすると、合計欄を小計（税抜）・消費税相当額（${TAX_RATE}%）・合計にします。単価は税抜きで入力します。`}
+          options={taxModes.map((value) => ({
+            value,
+            label: taxModeLabels[value],
+          }))}
+        />
         <ItemsTable
           items={items}
           amounts={amounts}
-          total={total}
+          totals={totals}
           errors={errors}
           onChange={updateItem}
           rounding={client?.rounding}
@@ -410,14 +438,15 @@ const cellInput =
 function ItemsTable({
   items,
   amounts,
-  total,
+  totals,
   errors,
   onChange,
   rounding,
 }: {
   items: ItemFormValues[];
   amounts: (number | null)[];
-  total: number | null;
+  /** 取引先が未選択なら null */
+  totals: Totals | null;
   errors: Record<string, string>;
   onChange: (
     position: number,
@@ -502,21 +531,48 @@ function ItemsTable({
           ))}
         </tbody>
         <tfoot>
-          <tr>
-            <th colSpan={5} className="px-1 py-2 text-right">
-              合計
-            </th>
-            <td className="px-1 py-2 text-right font-bold" aria-label="合計">
-              {total === null ? "—" : formatAmount(total)}
-            </td>
-          </tr>
+          {totals?.tax != null && (
+            <>
+              <TotalRow label="小計（税抜）" value={totals.subtotal} />
+              <TotalRow
+                label={`消費税相当額（${TAX_RATE}%）`}
+                value={totals.tax}
+              />
+            </>
+          )}
+          <TotalRow label="合計" value={totals?.total ?? null} bold />
         </tfoot>
       </table>
       <p className="mt-2 text-sm text-zinc-500">
         {rounding
-          ? `金額は数量×単価を取引先の端数処理（${roundingLabels[rounding]}）で計算します。最大10行です。`
+          ? `金額は数量×単価を取引先の端数処理（${roundingLabels[rounding]}）で計算します。${totals?.tax != null ? `消費税相当額も小計の${TAX_RATE}%を同じ端数処理で計算します。` : ""}最大10行です。`
           : "取引先を選択すると金額と合計を計算します。最大10行です。"}
       </p>
     </div>
+  );
+}
+
+/** 明細表の合計欄の1行。値が null（取引先が未選択）なら「—」 */
+function TotalRow({
+  label,
+  value,
+  bold = false,
+}: {
+  label: string;
+  value: number | null;
+  bold?: boolean;
+}) {
+  return (
+    <tr>
+      <th colSpan={5} className="px-1 py-2 text-right">
+        {label}
+      </th>
+      <td
+        className={`px-1 py-2 text-right ${bold ? "font-bold" : ""}`}
+        aria-label={label}
+      >
+        {value === null ? "—" : formatAmount(value)}
+      </td>
+    </tr>
   );
 }

@@ -10,7 +10,9 @@ import {
   noteLines,
   ownerGroups,
   recipientLines,
+  totalRows,
 } from "./invoice-text";
+import { sampleSnapshot } from "./test-snapshot";
 
 const owner: InvoiceSnapshot["owner"] = {
   name: "山田 太郎",
@@ -146,5 +148,34 @@ describe("備考", () => {
       noteLines("いつもお世話になっております。\nよろしくお願いします。"),
     ).toEqual(["いつもお世話になっております。", "よろしくお願いします。"]);
     expect(noteLines(null)).toEqual([]);
+  });
+});
+
+describe("合計欄", () => {
+  test("税抜なら「合計」だけ（太字）", () => {
+    expect(
+      totalRows({ ...sampleSnapshot, subtotal: 134000, tax: null }),
+    ).toEqual([{ label: "合計", value: "134,000", bold: true }]);
+  });
+
+  test("消費税の扱いを追加する前の台帳も「合計」だけ", () => {
+    expect(totalRows(sampleSnapshot)).toEqual([
+      { label: "合計", value: "134,000", bold: true },
+    ]);
+  });
+
+  test("税込なら小計（税抜）・消費税相当額（10%）・合計の3行", () => {
+    expect(
+      totalRows({
+        ...sampleSnapshot,
+        subtotal: 134000,
+        tax: 13400,
+        total: 147400,
+      }),
+    ).toEqual([
+      { label: "小計（税抜）", value: "134,000", bold: false },
+      { label: "消費税相当額（10%）", value: "13,400", bold: false },
+      { label: "合計", value: "147,400", bold: true },
+    ]);
   });
 });

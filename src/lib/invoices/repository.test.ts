@@ -187,6 +187,25 @@ describe("一覧", () => {
     ]);
   });
 
+  test("税込なら合計に消費税相当額を含める", () => {
+    const clientId = insertClient(db, { rounding: "floor" });
+    save(undefined, {
+      clientId,
+      taxMode: "included",
+      items: [
+        {
+          position: 0,
+          description: "x",
+          quantity: 100,
+          unit: "式",
+          unitPrice: 1234,
+        },
+      ],
+    });
+    // 1234 + 123（123.4 を切り捨て）
+    expect(listInvoices(db, { archived: false })[0].total).toBe(1357);
+  });
+
   test("アーカイブすると一覧から消えてアーカイブ一覧に出る。元に戻せる。削除できる", () => {
     const { id } = save(undefined);
     archiveInvoice(db, id);

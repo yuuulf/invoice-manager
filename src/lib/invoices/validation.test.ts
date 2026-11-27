@@ -143,6 +143,22 @@ describe("parseInvoiceForm（作成中の保存）", () => {
     ).toBe(true);
   });
 
+  test("消費税は未送信なら税抜。税込を選べる。不正な値はエラー", () => {
+    expect(
+      parseInvoiceForm(form()).ok && parseInvoiceForm(form()),
+    ).toMatchObject({
+      data: { taxMode: "excluded" },
+    });
+    expect(parseInvoiceForm(form({ taxMode: "included" }))).toMatchObject({
+      ok: true,
+      data: { taxMode: "included" },
+    });
+    expect(parseInvoiceForm(form({ taxMode: "x" }))).toMatchObject({
+      ok: false,
+      errors: { taxMode: "消費税を選択してください" },
+    });
+  });
+
   test("件名は34文字まで", () => {
     expect(SUBJECT_MAX_LENGTH).toBe(34);
     expect(parseInvoiceForm(form({ subject: "あ".repeat(34) })).ok).toBe(true);

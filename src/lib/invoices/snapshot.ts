@@ -1,5 +1,5 @@
 import type { Client, Invoice, InvoiceItem, Owner } from "@/db/schema";
-import { calcAmount, type Period } from "./calc";
+import { calcAmount, calcTotals, type Period } from "./calc";
 import { periodOf, type InvoiceWithItems } from "./repository";
 import { itemFieldName, type InvoiceFormErrors } from "./validation";
 
@@ -47,8 +47,22 @@ export type InvoiceSnapshot = {
     unitPrice: number;
     amount: number;
   }[];
+  /** 小計（明細の金額の合計、税抜）。消費税の扱いを追加する前の台帳にはない */
+  subtotal?: number;
+  /** 消費税相当額（10%）。税抜、または消費税の扱いを追加する前の台帳では undefined / null */
+  tax?: number | null;
+  /** 合計（ご請求金額）。税込なら小計 + 消費税相当額 */
   total: number;
 };
+
+/** 合計欄の内訳。税込なら小計（税抜）・消費税相当額・合計、税抜なら合計だけ（spec.md 8.4） */
+export function totalsOf(snapshot: InvoiceSnapshot) {
+  return {
+    subtotal: snapshot.subtotal ?? snapshot.total,
+    tax: snapshot.tax ?? null,
+    total: snapshot.total,
+  };
+}
 
 /** 必須チェックに使う項目。保存前のフォーム入力（InvoiceDraftInput）も渡せる */
 export type CompletenessInput = Pick<
@@ -178,6 +192,10 @@ export function buildSnapshot(
       accountHolder: owner.accountHolder,
     },
     items,
-    total: items.reduce((sum, item) => sum + item.amount, 0),
+    ...calcTotals(
+      items.reduce((sum, item) => sum + item.amount, 0),
+      invoice.taxMode,
+      client.rounding,
+    ),
   };
 }

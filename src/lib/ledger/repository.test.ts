@@ -305,6 +305,29 @@ describe("台帳から請求書へのコピー（spec.md 7.4）", () => {
     });
   });
 
+  test("消費税の扱い（税抜・税込）もコピーする", () => {
+    const excluded = getInvoice(
+      db,
+      copyLedgerToInvoice(db, confirm(createInvoice())),
+    );
+    expect(excluded?.taxMode).toBe("excluded");
+    const included = getInvoice(
+      db,
+      copyLedgerToInvoice(
+        db,
+        confirm(
+          createInvoice({ issueDate: "2026-12-01", taxMode: "included" }),
+        ),
+      ),
+    );
+    expect(included?.taxMode).toBe("included");
+  });
+
+  test("税込で確定すると、台帳の合計は消費税相当額込み", () => {
+    confirm(createInvoice({ taxMode: "included" }));
+    expect(listLedger(db)).toEqual([expect.objectContaining({ total: 55000 })]);
+  });
+
   test("取引先・事業主が削除・アーカイブされていたら未選択にする", () => {
     const ledgerId = confirm(createInvoice());
     db.update(clients)

@@ -188,6 +188,56 @@ describe("明細の金額と合計", () => {
   });
 });
 
+describe("消費税（税抜・税込）", () => {
+  async function fillOneRow(unitPrice: string) {
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: /取引先/ }),
+      "2", // 切り上げ
+    );
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "1行目の数量" }),
+      "1",
+    );
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "1行目の単価" }),
+      unitPrice,
+    );
+  }
+
+  test("作成時は税抜。合計欄は合計だけ", async () => {
+    renderNew();
+    expect(screen.getByRole("radio", { name: "税抜" })).toBeChecked();
+    await fillOneRow("1235");
+    expect(screen.getByLabelText("合計")).toHaveTextContent("1,235");
+    expect(screen.queryByLabelText("小計（税抜）")).not.toBeInTheDocument();
+  });
+
+  test("税込にすると小計（税抜）・消費税相当額（10%）・合計を表示する（端数は取引先の端数処理）", async () => {
+    renderNew();
+    await fillOneRow("1235");
+    await userEvent.click(screen.getByRole("radio", { name: "税込" }));
+    expect(screen.getByLabelText("小計（税抜）")).toHaveTextContent("1,235");
+    // 123.5 → 切り上げ 124
+    expect(screen.getByLabelText("消費税相当額（10%）")).toHaveTextContent(
+      "124",
+    );
+    expect(screen.getByLabelText("合計")).toHaveTextContent("1,359");
+    expect(
+      screen.getByText(
+        "金額は数量×単価を取引先の端数処理（切り上げ）で計算します。消費税相当額も小計の10%を同じ端数処理で計算します。最大10行です。",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  test("選んだ消費税をアクションに渡す", async () => {
+    const action = renderNew();
+    await userEvent.click(screen.getByRole("radio", { name: "税込" }));
+    await userEvent.click(screen.getByRole("button", { name: "作成" }));
+    const formData: FormData = action.mock.calls[0][1];
+    expect(formData.get("taxMode")).toBe("included");
+  });
+});
+
 describe("送信", () => {
   test("入力内容と手動変更の有無をアクションに渡す", async () => {
     const action = renderNew();
@@ -242,6 +292,7 @@ describe("送信", () => {
         dueDate: "",
         dueDateManual: false,
         notes: "",
+        taxMode: "excluded",
         items: Array.from({ length: 10 }, (_, i) => ({
           description: "",
           quantity: i === 0 ? "abc" : "",
@@ -290,6 +341,7 @@ test("編集では保存済みの内容と請求番号を表示する", () => {
     dueDate: "2027-01-05",
     dueDateManual: true,
     notes: "いつもお世話になっております。",
+    taxMode: "excluded",
     archivedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -367,6 +419,7 @@ describe("PDF 出力（spec.md 7.4）", () => {
           dueDate: "",
           dueDateManual: false,
           notes: "",
+          taxMode: "excluded",
           items: Array.from({ length: 10 }, () => ({
             description: "",
             quantity: "",

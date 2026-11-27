@@ -4,6 +4,7 @@ import type { InvoiceSnapshot } from "@/lib/invoices/snapshot";
 import {
   createDocument,
   layoutRecipientBlock,
+  lowerGaps,
   renderInvoicePdf,
 } from "./render-invoice";
 import { sampleSnapshot } from "./test-snapshot";
@@ -110,5 +111,22 @@ describe("上段・左の配置（件名が長いとき）", () => {
         layout({ ...longSubject, subject }).subjectLines,
       ).toBeLessThanOrEqual(3);
     }
+  });
+});
+
+describe("下段の間隔（備考欄をページに収める）", () => {
+  test("ふつうは明細表〜支払期限 12mm、支払期限〜備考 8mm", () => {
+    expect(lowerGaps(sampleSnapshot, mm(100) + mm(7.2) * 12)).toEqual({
+      beforePayment: mm(12),
+      beforeNotes: mm(8),
+    });
+  });
+
+  test("税込（合計欄3行）・手数料の行あり・件名が長いときは間隔を詰め、備考欄を確保する", () => {
+    // 明細の上端が下がり、合計欄が3行の場合の表の下端
+    const tableBottom = mm(110) + mm(7.2) * 14;
+    const gaps = lowerGaps(sampleSnapshot, tableBottom);
+    expect(gaps.beforePayment).toBeLessThan(mm(12));
+    expect(gaps.beforeNotes).toBeLessThan(mm(8));
   });
 });

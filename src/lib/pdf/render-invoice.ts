@@ -11,6 +11,7 @@ import {
   noteLines,
   ownerGroups,
   recipientLines,
+  totalRows,
 } from "./invoice-text";
 
 // 配置は spec.md 8.2（サンプル PDF の配置）に合わせる。単位は pt（1mm ≒ 2.835pt）
@@ -74,8 +75,13 @@ export function renderInvoicePdf(
   const { itemsTop } = drawRecipientBlock(doc, snapshot);
   drawOwnerBlock(doc, snapshot, seal);
   const tableBottom = drawItems(doc, snapshot, itemsTop);
-  const payBottom = drawPayment(doc, snapshot, tableBottom + mm(12));
-  drawNotes(doc, snapshot, payBottom + mm(8));
+  const gaps = lowerGaps(snapshot, tableBottom);
+  const payBottom = drawPayment(
+    doc,
+    snapshot,
+    tableBottom + gaps.beforePayment,
+  );
+  drawNotes(doc, snapshot, payBottom + gaps.beforeNotes);
   if (sample) drawSampleWatermark(doc);
 
   doc.end();
@@ -343,35 +349,67 @@ function drawItems(doc: Doc, s: InvoiceSnapshot, top: number) {
     doc.moveTo(x, top).lineTo(x, bottom).stroke();
   }
 
-  // 合計（数量列〜単価列の幅に「合計」、金額列に合計値）
-  const totalBottom = bottom + ROW_HEIGHT;
+  // 合計欄（数量列〜単価列の幅にラベル、金額列に値）。税込なら小計・消費税相当額・合計の 3 行
+  const rows = totalRows(s);
+  const totalBottom = bottom + ROW_HEIGHT * rows.length;
   for (const x of [xs.quantity, xs.amount, RIGHT]) {
     doc.moveTo(x, bottom).lineTo(x, totalBottom).stroke();
   }
-  doc.moveTo(xs.quantity, totalBottom).lineTo(RIGHT, totalBottom).stroke();
-  text(doc, "合計", xs.quantity, textY(bottom, 9.5), {
-    font: BOLD,
-    width: COL.quantity + COL.unitPrice,
-    align: "center",
-  });
-  text(
-    doc,
-    formatAmount(s.total),
-    xs.amount + CELL_PADDING,
-    textY(bottom, 10.5),
-    {
-      font: BOLD,
-      size: 10.5,
+  rows.forEach((row, i) => {
+    const rowTop = bottom + ROW_HEIGHT * i;
+    doc
+      .moveTo(xs.quantity, rowTop + ROW_HEIGHT)
+      .lineTo(RIGHT, rowTop + ROW_HEIGHT)
+      .stroke();
+    text(doc, row.label, xs.quantity, textY(rowTop, 9.5), {
+      font: row.bold ? BOLD : REGULAR,
+      width: COL.quantity + COL.unitPrice,
+      align: "center",
+    });
+    const size = row.bold ? 10.5 : 9.5;
+    text(doc, row.value, xs.amount + CELL_PADDING, textY(rowTop, size), {
+      font: row.bold ? BOLD : REGULAR,
+      size,
       width: COL.amount - CELL_PADDING * 2,
       align: "right",
-    },
-  );
+    });
+  });
   return totalBottom;
+}
+
+const PAYMENT_LINE_HEIGHT = 9.5 * 1.8;
+/** ページの下余白 */
+const BOTTOM_MARGIN = mm(14);
+/** 備考欄の高さの目安。これより低くなるときは上の間隔を詰める */
+const NOTES_MIN_HEIGHT = mm(42);
+
+/** 支払期限・振込先の高さ */
+function paymentHeight(s: InvoiceSnapshot) {
+  const bankLineCount = bankLines(s.owner, s.client.feeBearer).length;
+  return PAYMENT_LINE_HEIGHT * (1 + bankLineCount) + mm(3);
+}
+
+/**
+ * 明細表〜支払期限、支払期限〜備考の間隔。件名が長い・税込・手数料の行ありなどで
+ * 備考欄が目安より低くなる場合は、間隔を詰めてページに収める
+ */
+export function lowerGaps(s: InvoiceSnapshot, tableBottom: number) {
+  const normal = { beforePayment: mm(12), beforeNotes: mm(8) };
+  const notesHeight =
+    PAGE.height -
+    BOTTOM_MARGIN -
+    (tableBottom +
+      normal.beforePayment +
+      paymentHeight(s) +
+      normal.beforeNotes);
+  return notesHeight >= NOTES_MIN_HEIGHT
+    ? normal
+    : { beforePayment: mm(7), beforeNotes: mm(5) };
 }
 
 /** 下段: 支払期限・振込先。下端の y を返す */
 function drawPayment(doc: Doc, s: InvoiceSnapshot, top: number) {
-  const lineHeight = 9.5 * 1.8;
+  const lineHeight = PAYMENT_LINE_HEIGHT;
   const dueLabel = "支払期限（お振込み期限）：";
   doc.font(BOLD).fontSize(9.5);
   const valueX = LEFT + doc.widthOfString(dueLabel) + mm(2);
@@ -395,7 +433,8 @@ function drawPayment(doc: Doc, s: InvoiceSnapshot, top: number) {
 function drawNotes(doc: Doc, s: InvoiceSnapshot, top: number) {
   const padding = { x: mm(4), y: mm(3) };
   const lineHeight = 9.5 * 1.8;
-  const height = Math.max(mm(42), PAGE.height - mm(14) - top);
+  // 下余白までを備考欄にする（ページからはみ出さない）
+  const height = PAGE.height - BOTTOM_MARGIN - top;
   doc
     .lineWidth(0.75)
     .strokeColor(LINE)

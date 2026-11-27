@@ -1,6 +1,11 @@
 import { accountTypeLabels } from "@/lib/owners/labels";
-import { formatAmount, formatQuantity, type Period } from "@/lib/invoices/calc";
-import type { InvoiceSnapshot } from "@/lib/invoices/snapshot";
+import {
+  formatAmount,
+  formatQuantity,
+  TAX_RATE,
+  type Period,
+} from "@/lib/invoices/calc";
+import { totalsOf, type InvoiceSnapshot } from "@/lib/invoices/snapshot";
 
 // PDF に出す文言（spec.md 8 章）。コロン・括弧は全角、月日は 2 桁 0 埋め（8.3）
 
@@ -80,4 +85,25 @@ export function bankLines(
 /** 備考の本文（8.4 備考）。入力した備考を行ごとに */
 export function noteLines(notes: string | null): string[] {
   return notes ? notes.split("\n") : [];
+}
+
+/**
+ * 明細表の下の合計欄（8.4 明細・合計）。税込なら小計（税抜）・消費税相当額・合計の 3 行、税抜なら合計だけ。
+ * 合計の行だけ太字にする
+ */
+export function totalRows(
+  snapshot: InvoiceSnapshot,
+): { label: string; value: string; bold: boolean }[] {
+  const { subtotal, tax, total } = totalsOf(snapshot);
+  const totalRow = { label: "合計", value: formatAmount(total), bold: true };
+  if (tax === null) return [totalRow];
+  return [
+    { label: "小計（税抜）", value: formatAmount(subtotal), bold: false },
+    {
+      label: `消費税相当額（${TAX_RATE}%）`,
+      value: formatAmount(tax),
+      bold: false,
+    },
+    totalRow,
+  ];
 }

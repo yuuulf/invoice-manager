@@ -47,6 +47,7 @@ export function emptyDraft(
     dueDate: null,
     dueDateManual: false,
     notes: null,
+    taxMode: "excluded",
     items: [],
     ...overrides,
   };

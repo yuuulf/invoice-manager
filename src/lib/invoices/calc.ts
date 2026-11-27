@@ -1,4 +1,4 @@
-import type { PaymentTermType, RoundingMode } from "@/db/schema";
+import type { PaymentTermType, RoundingMode, TaxMode } from "@/db/schema";
 
 /** 数量は小数第 2 位まで（spec.md 7.3）。内部では 100 倍した整数で扱う */
 export const QUANTITY_SCALE = 100;
@@ -27,21 +27,58 @@ export function parseUnitPrice(text: string): number | null {
   return UNIT_PRICE_PATTERN.test(text) ? Number(text) : null;
 }
 
+/** numerator / denominator を端数処理する（どちらも 0 以上の整数） */
+function divideWithRounding(
+  numerator: number,
+  denominator: number,
+  rounding: RoundingMode,
+): number {
+  switch (rounding) {
+    case "floor":
+      return Math.floor(numerator / denominator);
+    case "ceil":
+      return Math.ceil(numerator / denominator);
+    case "round":
+      return Math.floor((numerator + denominator / 2) / denominator);
+  }
+}
+
 /** 金額 = 数量 × 単価。端数は取引先の端数処理に従う（spec.md 7.3） */
 export function calcAmount(
   scaledQuantity: number,
   unitPrice: number,
   rounding: RoundingMode,
 ): number {
-  const scaled = scaledQuantity * unitPrice;
-  switch (rounding) {
-    case "floor":
-      return Math.floor(scaled / QUANTITY_SCALE);
-    case "ceil":
-      return Math.ceil(scaled / QUANTITY_SCALE);
-    case "round":
-      return Math.floor((scaled + QUANTITY_SCALE / 2) / QUANTITY_SCALE);
-  }
+  return divideWithRounding(
+    scaledQuantity * unitPrice,
+    QUANTITY_SCALE,
+    rounding,
+  );
+}
+
+/** 消費税率（%）（spec.md 7.3） */
+export const TAX_RATE = 10;
+
+export type Totals = {
+  /** 明細の金額の合計（税抜） */
+  subtotal: number;
+  /** 消費税相当額。税抜なら null */
+  tax: number | null;
+  /** 合計（ご請求金額）。税込なら小計 + 消費税相当額 */
+  total: number;
+};
+
+/**
+ * 小計から合計を出す（spec.md 7.3）。税込なら小計の 10% を取引先の端数処理で消費税相当額にして足す
+ */
+export function calcTotals(
+  subtotal: number,
+  taxMode: TaxMode,
+  rounding: RoundingMode,
+): Totals {
+  if (taxMode === "excluded") return { subtotal, tax: null, total: subtotal };
+  const tax = divideWithRounding(subtotal * TAX_RATE, 100, rounding);
+  return { subtotal, tax, total: subtotal + tax };
 }
 
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
