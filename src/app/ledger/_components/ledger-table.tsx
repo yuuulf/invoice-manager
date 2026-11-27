@@ -1,7 +1,7 @@
 import {
   ClampedText,
   columnWidth,
-  tableClass,
+  wideTableClass,
   TableScroll,
 } from "@/components/ui/data-table";
 import { SortableHeader } from "@/components/ui/sortable-header";
@@ -32,7 +32,7 @@ export function LedgerTable({
 
   return (
     <TableScroll>
-      <table className={tableClass}>
+      <table className={wideTableClass}>
         <thead>
           <tr className="border-b border-zinc-300 text-left">
             <SortableHeader

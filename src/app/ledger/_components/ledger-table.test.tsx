@@ -205,3 +205,11 @@ test("絞り込んで0件なら、条件に合うものがない旨を出す", (
   render(<LedgerTable entries={[]} view={{ ...view, filtered: true }} />);
   expect(screen.getByText("条件に合う台帳はありません。")).toBeInTheDocument();
 });
+
+test("列が多いため、ほかの一覧より広い最小幅で横スクロールにする", () => {
+  render(<LedgerTable view={view} entries={[entry]} />);
+  const table = screen.getByRole("table");
+  expect(table).toHaveClass("min-w-[68.75rem]");
+  expect(table).not.toHaveClass("min-w-[59rem]");
+  expect(table.parentElement).toHaveClass("overflow-x-auto");
+});
