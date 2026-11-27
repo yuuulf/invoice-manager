@@ -18,7 +18,10 @@ import {
   type InvoiceSnapshot,
 } from "@/lib/invoices/snapshot";
 import type { InvoiceFormErrors } from "@/lib/invoices/validation";
+import { LEDGER_SENT_CANNOT_DELETE } from "./status";
+import { ownerDisplayName } from "@/lib/owners/labels";
 import { ledgerNumbersWithPrefix } from "./numbers";
+import type { LedgerStatusInput } from "./validation";
 
 export type OutputData = { snapshot: InvoiceSnapshot; seal: Buffer | null };
 
@@ -163,6 +166,10 @@ export type LedgerListRow = Pick<
   | "subject"
   | "total"
   | "confirmedAt"
+  | "sentOn"
+  | "paidOn"
+  | "sentFileUrl"
+  | "memo"
 >;
 
 /** 台帳の一覧（新しい順） */
@@ -176,10 +183,70 @@ export function listLedger(db: Db): LedgerListRow[] {
       subject: ledgerEntries.subject,
       total: ledgerEntries.total,
       confirmedAt: ledgerEntries.confirmedAt,
+      sentOn: ledgerEntries.sentOn,
+      paidOn: ledgerEntries.paidOn,
+      sentFileUrl: ledgerEntries.sentFileUrl,
+      memo: ledgerEntries.memo,
     })
     .from(ledgerEntries)
     .orderBy(desc(ledgerEntries.id))
     .all();
+}
+
+export type LedgerDetail = LedgerListRow & {
+  /** 確定時の事業主の表示名（屋号（氏名）） */
+  ownerName: string;
+  /** 確定時の支払い期限 */
+  dueDate: string;
+};
+
+/** 台帳の編集画面に出すデータ（確定した内容の主な項目と、送信・入金・備考） */
+export function getLedgerEntry(db: Db, id: number): LedgerDetail | undefined {
+  const row = db
+    .select({
+      id: ledgerEntries.id,
+      invoiceNumber: ledgerEntries.invoiceNumber,
+      issueDate: ledgerEntries.issueDate,
+      clientName: ledgerEntries.clientName,
+      subject: ledgerEntries.subject,
+      total: ledgerEntries.total,
+      confirmedAt: ledgerEntries.confirmedAt,
+      sentOn: ledgerEntries.sentOn,
+      paidOn: ledgerEntries.paidOn,
+      sentFileUrl: ledgerEntries.sentFileUrl,
+      memo: ledgerEntries.memo,
+      snapshot: ledgerEntries.snapshot,
+    })
+    .from(ledgerEntries)
+    .where(eq(ledgerEntries.id, id))
+    .get();
+  if (!row) return undefined;
+  const { snapshot, ...rest } = row;
+  return {
+    ...rest,
+    ownerName: ownerDisplayName(snapshot.owner),
+    dueDate: snapshot.dueDate,
+  };
+}
+
+/**
+ * 台帳の送信・入金・備考を保存する（spec.md 7.6）。確定した内容は変えない。
+ * 入金日は送信日がないと保存できない
+ */
+export function updateLedgerStatus(
+  db: Db,
+  id: number,
+  input: LedgerStatusInput,
+): void {
+  if (input.paidOn && !input.sentOn) {
+    throw new Error("送信日のない台帳を入金済みにはできません");
+  }
+  const { changes } = db
+    .update(ledgerEntries)
+    .set(input)
+    .where(eq(ledgerEntries.id, id))
+    .run();
+  if (changes === 0) throw new Error("台帳が見つかりません");
 }
 
 /** 台帳から PDF を再出力するためのデータ（spec.md 7.4） */
@@ -191,18 +258,25 @@ export function getLedgerOutput(db: Db, id: number): OutputData | undefined {
     .get();
 }
 
-/** 台帳を削除する。確認のため請求番号の入力が一致している必要がある（spec.md 4） */
+/**
+ * 台帳を削除する。確認のため請求番号の入力が一致している必要がある（spec.md 4）。
+ * 送信済みの台帳は削除できない（spec.md 7.6）
+ */
 export function deleteLedgerEntry(
   db: Db,
   id: number,
   typedInvoiceNumber: string,
 ): RowActionResult {
   const entry = db
-    .select({ invoiceNumber: ledgerEntries.invoiceNumber })
+    .select({
+      invoiceNumber: ledgerEntries.invoiceNumber,
+      sentOn: ledgerEntries.sentOn,
+    })
     .from(ledgerEntries)
     .where(eq(ledgerEntries.id, id))
     .get();
   if (!entry) return { error: "台帳が見つかりません" };
+  if (entry.sentOn) return { error: LEDGER_SENT_CANNOT_DELETE };
   if (entry.invoiceNumber !== typedInvoiceNumber.trim()) {
     return { error: "請求番号が一致しません" };
   }

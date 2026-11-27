@@ -174,6 +174,14 @@ export const ledgerEntries = sqliteTable("ledger_entries", {
   confirmedAt: integer("confirmed_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
+  /** 取引先に送信した日（yyyy-MM-dd）。未送信なら null（spec.md 7.6） */
+  sentOn: text("sent_on"),
+  /** 入金された日（yyyy-MM-dd）。未入金なら null。送信済みのときだけ入る（spec.md 7.6） */
+  paidOn: text("paid_on"),
+  /** 送信ファイル（署名した PDF など）のリンク。任意。アプリからは取りに行かない（spec.md 7.6） */
+  sentFileUrl: text("sent_file_url"),
+  /** 台帳の備考（請求書の備考とは別。PDF には出さない） */
+  memo: text("memo"),
 });
 
 export type LedgerEntry = typeof ledgerEntries.$inferSelect;

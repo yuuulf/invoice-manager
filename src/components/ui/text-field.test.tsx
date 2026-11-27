@@ -36,3 +36,13 @@ test("入力制限: 入力のたびに値を変換する", () => {
   fireEvent.input(input, { target: { value: "150-00012" } });
   expect(input).toHaveValue("1500001");
 });
+
+test("addon を入力欄の右に並べる", () => {
+  render(<TextField label="URL" addon={<a href="/x">開く</a>} />);
+  const input = screen.getByRole("textbox", { name: "URL" });
+  const link = screen.getByRole("link", { name: "開く" });
+  expect(input.compareDocumentPosition(link)).toBe(
+    Node.DOCUMENT_POSITION_FOLLOWING,
+  );
+  expect(input.parentElement?.parentElement).toContainElement(link);
+});

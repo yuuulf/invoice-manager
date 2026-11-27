@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
-import { ActionMenu, ActionMenuItem } from "./action-menu";
+import { ActionMenu, ActionMenuAnchor, ActionMenuItem } from "./action-menu";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -91,6 +91,30 @@ test("項目を選ぶとメニューを閉じる", async () => {
   await userEvent.click(trigger());
   await userEvent.click(screen.getByRole("menuitem", { name: "アーカイブ" }));
   expect(onArchive).toHaveBeenCalledTimes(1);
+  await vi.waitFor(() =>
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument(),
+  );
+});
+
+test("リンクの項目はダウンロード用のリンクになり、選ぶとメニューを閉じる", async () => {
+  render(
+    <ActionMenu>
+      <ActionMenuAnchor
+        href="/files/a.pdf"
+        download="a.pdf"
+        // jsdom はページ遷移できないため、リンクの既定の動作を止める
+        onClick={(e) => e.preventDefault()}
+      >
+        PDF出力
+      </ActionMenuAnchor>
+    </ActionMenu>,
+  );
+  await userEvent.click(trigger());
+  const link = screen.getByRole("menuitem", { name: "PDF出力" });
+  expect(link.tagName).toBe("A");
+  expect(link).toHaveAttribute("href", "/files/a.pdf");
+  expect(link).toHaveAttribute("download", "a.pdf");
+  await userEvent.click(link);
   await vi.waitFor(() =>
     expect(screen.queryByRole("menu")).not.toBeInTheDocument(),
   );
