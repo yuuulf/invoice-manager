@@ -9,6 +9,13 @@ import type { ReactNode } from "react";
 export const tableClass =
   "w-full min-w-[59rem] table-fixed border-collapse text-sm";
 
+/**
+ * 列が多い一覧（台帳）のテーブル。最小幅を 68.75rem（1100px）に広げ、幅を分け合う列（取引先・件名）に
+ * 1 列 150px 程度を残す。画面の幅がおよそ 1350px 以下で横スクロールになる
+ */
+export const wideTableClass =
+  "w-full min-w-[68.75rem] table-fixed border-collapse text-sm";
+
 /** 一覧のテーブルを囲み、画面が狭いときは表だけを横スクロールさせる */
 export function TableScroll({ children }: { children: ReactNode }) {
   return <div className="overflow-x-auto">{children}</div>;
