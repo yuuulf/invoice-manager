@@ -13,6 +13,7 @@ import {
   basisMonthOf,
   calcAmount,
   calcDueDate,
+  calcTotals,
   invoiceNumberPrefix,
   nextInvoiceNumber,
   type Period,
@@ -27,7 +28,10 @@ export type InvoiceListRow = Pick<
   "id" | "invoiceNumber" | "issueDate" | "subject"
 > & {
   clientName: string | null;
-  /** 金額が計算できる行（数量と単価がある行）の合計。取引先が未選択なら null */
+  /**
+   * 合計（ご請求金額）。金額が計算できる行（数量と単価がある行）の合計で、税込なら消費税相当額を足す。
+   * 取引先が未選択なら null
+   */
   total: number | null;
 };
 
@@ -77,6 +81,7 @@ export function listInvoices(
       subject: invoices.subject,
       clientName: clients.name,
       rounding: clients.rounding,
+      taxMode: invoices.taxMode,
     })
     .from(invoices)
     .leftJoin(clients, eq(invoices.clientId, clients.id))
@@ -98,15 +103,19 @@ export function listInvoices(
     )
     .all();
 
-  return rows.map(({ rounding, ...row }) => ({
+  return rows.map(({ rounding, taxMode, ...row }) => ({
     ...row,
     total:
       rounding === null
         ? null
-        : calcTotal(
-            items.filter((item) => item.invoiceId === row.id),
+        : calcTotals(
+            calcTotal(
+              items.filter((item) => item.invoiceId === row.id),
+              rounding,
+            ),
+            taxMode,
             rounding,
-          ),
+          ).total,
   }));
 }
 

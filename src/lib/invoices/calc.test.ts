@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   basisMonthOf,
   calcAmount,
+  calcTotals,
   calcDueDate,
   formatAmount,
   formatQuantity,
@@ -169,4 +170,37 @@ test("formatAmount は 3 桁区切り", () => {
 test("toDateString はローカル時刻の日付", () => {
   expect(toDateString(new Date(2026, 10, 30, 23, 59))).toBe("2026-11-30");
   expect(toDateString(new Date(2027, 0, 5))).toBe("2027-01-05");
+});
+
+describe("合計（spec.md 7.3）", () => {
+  test("税抜なら小計がそのまま合計で、消費税相当額はない", () => {
+    expect(calcTotals(110000, "excluded", "floor")).toEqual({
+      subtotal: 110000,
+      tax: null,
+      total: 110000,
+    });
+  });
+
+  test("税込なら小計の10%を消費税相当額として足す", () => {
+    expect(calcTotals(110000, "included", "floor")).toEqual({
+      subtotal: 110000,
+      tax: 11000,
+      total: 121000,
+    });
+  });
+
+  test.each([
+    ["floor", 12],
+    ["round", 12],
+    ["ceil", 13],
+  ] as const)("消費税相当額の端数は取引先の端数処理（%s）", (rounding, tax) => {
+    // 123 × 10% = 12.3
+    expect(calcTotals(123, "included", rounding).tax).toBe(tax);
+  });
+
+  test("四捨五入は 0.5 を切り上げる", () => {
+    // 125 × 10% = 12.5
+    expect(calcTotals(125, "included", "round").tax).toBe(13);
+    expect(calcTotals(125, "included", "floor").tax).toBe(12);
+  });
 });

@@ -4,6 +4,7 @@ import type { InvoiceSnapshot } from "@/lib/invoices/snapshot";
 import {
   createDocument,
   layoutRecipientBlock,
+  layoutNotes,
   renderInvoicePdf,
 } from "./render-invoice";
 import { sampleSnapshot } from "./test-snapshot";
@@ -110,5 +111,53 @@ describe("上段・左の配置（件名が長いとき）", () => {
         layout({ ...longSubject, subject }).subjectLines,
       ).toBeLessThanOrEqual(3);
     }
+  });
+});
+
+describe("備考欄（spec.md 7.1, 8.4）", () => {
+  test("上限の250文字（改行なし）は、いちばん狭い備考欄（税込・宛名2行・件名3行・手数料の行あり）にも入る", () => {
+    const layout = layoutNotes(
+      createDocument("test"),
+      "あ".repeat(250),
+      mm(27.4),
+    );
+    expect(layout.fits).toBe(true);
+    expect(layout.size).toBeGreaterThanOrEqual(6.5);
+  });
+
+  test.each([
+    ["全角50文字×5行", "あ".repeat(50)],
+    ["半角100文字×5行（幅の広い W）", "W".repeat(100)],
+    ["半角100文字×5行（数字）", "1".repeat(100)],
+  ])("上限いっぱい（%s）でも、いちばん狭い備考欄に入る", (_, line) => {
+    const notes = Array.from({ length: 5 }, () => line).join("\n");
+    const layout = layoutNotes(createDocument("test"), notes, mm(27.4));
+    expect(layout.fits).toBe(true);
+    expect(layout.size).toBeGreaterThanOrEqual(5);
+  });
+
+  test("欄に入るなら通常の大きさ（9.5pt、行の高さ 1.8 倍）", () => {
+    const layout = layoutNotes(createDocument("test"), "1\n2\n3\n4\n5", mm(45));
+    expect(layout).toMatchObject({ size: 9.5, fits: true });
+    expect(layout.lineHeight).toBeCloseTo(9.5 * 1.8);
+  });
+
+  test("欄が狭くて入らなければ、行間を詰めてから字を小さくし、5行を入れる", () => {
+    // 税込・宛名 2 行・件名 3 行・手数料の行ありのときの備考欄の高さ
+    const layout = layoutNotes(
+      createDocument("test"),
+      "1\n2\n3\n4\n5",
+      mm(27.4),
+    );
+    expect(layout.fits).toBe(true);
+    expect(layout.size).toBeLessThan(9.5);
+    expect(layout.size).toBeGreaterThanOrEqual(6.5);
+    expect(mm(3) * 2 + layout.lineHeight * 6).toBeLessThanOrEqual(mm(27.4));
+  });
+
+  test("備考が短ければ、欄が狭くても字は小さくしない", () => {
+    expect(layoutNotes(createDocument("test"), "1\n2", mm(27.4)).size).toBe(
+      9.5,
+    );
   });
 });

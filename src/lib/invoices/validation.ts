@@ -1,4 +1,9 @@
-import { periodTypes, type PeriodType } from "@/db/schema";
+import {
+  periodTypes,
+  taxModes,
+  type PeriodType,
+  type TaxMode,
+} from "@/db/schema";
 import { getText, isOneOf } from "@/lib/form-data";
 import {
   isValidDate,
@@ -9,6 +14,38 @@ import {
 
 /** 件名の最大文字数。PDF で件名＋対象期間が 3 行に収まる長さ（spec.md 7.1） */
 export const SUBJECT_MAX_LENGTH = 34;
+
+/** 備考の 1 行の文字数（全角換算。spec.md 7.1）。これを超えると折り返す */
+export const NOTES_LINE_WIDTH = 50;
+/** 備考の最大行数（折り返しを含む。spec.md 7.1） */
+export const NOTES_MAX_LINES = 5;
+
+/** 全角換算の文字幅。半角（ASCII・半角カナ）は 0.5、それ以外は 1 */
+function charWidth(char: string) {
+  const code = char.codePointAt(0)!;
+  return code <= 0x7e || (code >= 0xff61 && code <= 0xff9f) ? 0.5 : 1;
+}
+
+/**
+ * 備考の行数。改行で区切った各行を、1 行 50 文字（全角換算）で折り返して数える（spec.md 7.1）。
+ * 空の行も 1 行と数える。備考が空なら 0
+ */
+export function countNoteLines(notes: string): number {
+  if (!notes) return 0;
+  return notes.split("\n").reduce((total, line) => {
+    let lines = 1;
+    let width = 0;
+    for (const char of line) {
+      const w = charWidth(char);
+      if (width + w > NOTES_LINE_WIDTH) {
+        lines += 1;
+        width = 0;
+      }
+      width += w;
+    }
+    return total + lines;
+  }, 0);
+}
 
 /** 明細の最大行数（spec.md 7.3） */
 export const MAX_ITEMS = 10;
@@ -35,6 +72,8 @@ export type InvoiceDraftInput = {
   dueDate: string | null;
   dueDateManual: boolean;
   notes: string | null;
+  /** 消費税の扱い（税抜／税込） */
+  taxMode: TaxMode;
   /** 何か入力のある行だけ */
   items: InvoiceItemInput[];
 };
@@ -58,6 +97,7 @@ export type InvoiceFormValues = {
   dueDate: string;
   dueDateManual: boolean;
   notes: string;
+  taxMode: string;
   items: ItemFormValues[];
 };
 
@@ -85,6 +125,7 @@ function readValues(formData: FormData): InvoiceFormValues {
     dueDate: text("dueDate"),
     dueDateManual: formData.get("dueDateManual") === "true",
     notes: getNotes(formData),
+    taxMode: text("taxMode"),
     items: Array.from({ length: MAX_ITEMS }, (_, i) => ({
       description: text(itemFieldName(i, "description")),
       quantity: text(itemFieldName(i, "quantity")),
@@ -126,6 +167,9 @@ export function parseInvoiceForm(formData: FormData): InvoiceParseResult {
   if ([...values.subject].length > SUBJECT_MAX_LENGTH) {
     errors.subject = `件名は${SUBJECT_MAX_LENGTH}文字以内で入力してください`;
   }
+  if (countNoteLines(values.notes) > NOTES_MAX_LINES) {
+    errors.notes = `備考は1行${NOTES_LINE_WIDTH}文字で折り返して${NOTES_MAX_LINES}行以内で入力してください`;
+  }
   if (values.dueDate && !isValidDate(values.dueDate)) {
     errors.dueDate = "支払い期限の日付が正しくありません";
   }
@@ -158,6 +202,14 @@ export function parseInvoiceForm(formData: FormData): InvoiceParseResult {
       errors.periodEnd = "対象期間の終了日は開始日以降にしてください";
     }
   }
+
+  // 未送信なら税抜（spec.md 7.1 のデフォルト）
+  const taxMode: TaxMode | null = !values.taxMode
+    ? "excluded"
+    : isOneOf(taxModes, values.taxMode)
+      ? values.taxMode
+      : null;
+  if (taxMode === null) errors.taxMode = "消費税を選択してください";
 
   const items: InvoiceItemInput[] = [];
   values.items.forEach((item, position) => {
@@ -201,6 +253,7 @@ export function parseInvoiceForm(formData: FormData): InvoiceParseResult {
       dueDate: orNull(values.dueDate),
       dueDateManual: values.dueDateManual,
       notes: orNull(values.notes),
+      taxMode: taxMode!,
       items,
     },
   };

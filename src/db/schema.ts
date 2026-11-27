@@ -92,6 +92,12 @@ export const periodTypes = ["month", "range"] as const;
 export type PeriodType = (typeof periodTypes)[number];
 
 /**
+ * 消費税の扱い（spec.md 7.1）。excluded=税抜（税を表示しない）、included=税込（小計に消費税相当額を足す）
+ */
+export const taxModes = ["excluded", "included"] as const;
+export type TaxMode = (typeof taxModes)[number];
+
+/**
  * 作成中の請求書（spec.md 7）。必須項目がそろっていなくても保存できるため、ほとんどの列は null 可。
  * 日付は "YYYY-MM-DD"、年月は "YYYY-MM" の文字列で持つ。
  */
@@ -117,6 +123,7 @@ export const invoices = sqliteTable("invoices", {
     .notNull()
     .default(false),
   notes: text("notes"),
+  taxMode: text("tax_mode", { enum: taxModes }).notNull().default("excluded"),
   archivedAt: integer("archived_at", { mode: "timestamp" }),
   ...timestamps,
 });

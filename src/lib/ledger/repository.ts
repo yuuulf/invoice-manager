@@ -13,6 +13,7 @@ import { getInvoice, saveInvoice } from "@/lib/invoices/repository";
 import {
   buildSnapshot,
   checkCompleteness,
+  totalsOf,
   type InvoiceSnapshot,
 } from "@/lib/invoices/snapshot";
 import type { InvoiceFormErrors } from "@/lib/invoices/validation";
@@ -239,6 +240,7 @@ export function copyLedgerToInvoice(db: Db, id: number): number {
     dueDate: snapshot.dueDate,
     dueDateManual: true,
     notes: snapshot.notes,
+    taxMode: totalsOf(snapshot).tax === null ? "excluded" : "included",
     items: snapshot.items.map(
       ({ position, description, quantity, unit, unitPrice }) => ({
         position,
