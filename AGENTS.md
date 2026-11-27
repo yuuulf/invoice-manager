@@ -24,17 +24,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## コマンド
 
-| コマンド               | 用途                                                                       |
-| ---------------------- | -------------------------------------------------------------------------- |
-| `npm run local`        | 最新 main を `.local-run/` で起動（DB バックアップ 3 世代、ポート 3110〜） |
-| `npm run dev`          | 開発サーバー起動                                                           |
-| `npm run lint`         | ESLint（警告が1件でもあれば失敗）                                          |
-| `npm run format`       | Prettier で整形                                                            |
-| `npm run format:check` | Prettier の差分検査                                                        |
-| `npm test`             | Vitest でテスト実行                                                        |
-| `npm run test:watch`   | Vitest を監視モードで実行                                                  |
-| `npm run db:generate`  | スキーマからマイグレーションを生成                                         |
-| `npm run build`        | 本番ビルド                                                                 |
+| コマンド               | 用途                                                                                               |
+| ---------------------- | -------------------------------------------------------------------------------------------------- |
+| `npm run local`        | 最新 main を `.local-run/` で起動（データは `data/local/`、DB バックアップ 3 世代、ポート 3110〜） |
+| `npm run dev`          | 開発サーバー起動                                                                                   |
+| `npm run lint`         | ESLint（警告が1件でもあれば失敗）                                                                  |
+| `npm run format`       | Prettier で整形                                                                                    |
+| `npm run format:check` | Prettier の差分検査                                                                                |
+| `npm test`             | Vitest でテスト実行                                                                                |
+| `npm run test:watch`   | Vitest を監視モードで実行                                                                          |
+| `npm run db:generate`  | スキーマからマイグレーションを生成                                                                 |
+| `npm run build`        | 本番ビルド                                                                                         |
 
 ## ディレクトリ構成・コーディング規約
 
@@ -62,7 +62,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - DB には `@/db` の `getDb()` で接続する（`server-only` 付き）
 - テーブル定義を変えたら `npm run db:generate` でマイグレーション（`drizzle/`）を生成し、同じコミットに含める。生成済みのマイグレーションは手で書き換えない
 - マイグレーションは `getDb()` で自動で適用される（開発サーバーを起動したまま追加しても、次の接続で適用される）。テストでは `@/db/test-utils` の `createTestDb()`（マイグレーション適用済みのインメモリ DB）を使う
-- DB ファイルは `data/`（git 管理外）。保存先は環境変数 `DATABASE_PATH` で変更できる
+- DB ファイルは `data/`（git 管理外）。開発は `data/invoice-manager.db`（環境変数 `DATABASE_PATH` で変更可）
+- `npm run local`（普段使い）のデータは `data/local/`（`LOCAL_DATABASE_PATH` で変更可）。開発のデータと混ぜないため、`npm run local` は `DATABASE_PATH` を見ない
 - `cacheComponents` が有効なため、better-sqlite3 の同期クエリはそのままだとビルド時にプリレンダーされる。リクエストごとに最新データを表示するページでは、クエリの前に `connection()`（`next/server`）を呼ぶ
 
 ## UI と文言

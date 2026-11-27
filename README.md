@@ -47,17 +47,20 @@ GitHub の **最新の main** を取り出して起動します。起動した�
 
 ### データの保存場所とバックアップ
 
-- データはすべて `data/invoice-manager.db`（SQLite）に保存されます。git には含まれません（`npm run local` は専用フォルダから起動しますが、データはこの場所を使います）
-- `npm run local` で起動するたびに、`data/backups/invoice-manager-{日時}.db` にバックアップを取ります。新しいものから **3 世代** だけ残し、古いものは自動で削除します
-- バックアップから戻すときは、アプリを終了してから、戻したいバックアップを `data/invoice-manager.db` に上書きコピーします（同じフォルダの `invoice-manager.db-wal` と `invoice-manager.db-shm` があれば削除してから）
-- 手元で別の場所にも保管したいときは、アプリを終了してから `data/` フォルダごとコピーしてください
-- 保存先を変えるときは環境変数 `DATABASE_PATH` で指定します（例: `DATABASE_PATH=~/Documents/invoice.db npm run local`）
+- `npm run local` のデータは `data/local/invoice-manager.db`（SQLite）に保存されます。git には含まれません
+- 開発（`npm run dev`）のデータ `data/invoice-manager.db` とは別のファイルなので、開発中に試したデータが混ざることはありません
+- `npm run local` で起動するたびに、`data/local/backups/invoice-manager-{日時}.db` にバックアップを取ります。新しいものから **3 世代** だけ残し、古いものは自動で削除します
+- バックアップから戻すときは、アプリを終了してから、戻したいバックアップを `data/local/invoice-manager.db` に上書きコピーします（同じフォルダの `invoice-manager.db-wal` と `invoice-manager.db-shm` があれば削除してから）
+- 手元で別の場所にも保管したいときは、アプリを終了してから `data/local/` フォルダごとコピーしてください
+- 保存先を変えるときは環境変数 `LOCAL_DATABASE_PATH` で指定します（例: `LOCAL_DATABASE_PATH=~/Documents/invoice.db npm run local`）。開発用の `DATABASE_PATH` は `npm run local` では使いません
 
 ## 開発
 
 ```sh
 npm run dev    # 開発サーバー（http://localhost:3000）
 ```
+
+開発サーバーのデータは `data/invoice-manager.db`（環境変数 `DATABASE_PATH` で変更可）で、`npm run local` のデータとは分かれています。
 
 | コマンド               | 用途                                                             |
 | ---------------------- | ---------------------------------------------------------------- |
