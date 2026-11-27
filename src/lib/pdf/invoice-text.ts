@@ -45,9 +45,9 @@ export function ownerGroups(owner: InvoiceSnapshot["owner"]) {
   };
 }
 
-/** "¥134,000 -"（8.4 ご請求金額） */
+/** "¥134,000-"（8.4 ご請求金額） */
 export function formatBilledAmount(total: number): string {
-  return `¥${formatAmount(total)} -`;
+  return `¥${formatAmount(total)}-`;
 }
 
 /** 数量は数値と単位の間に半角スペース（8.4 明細・合計） */
