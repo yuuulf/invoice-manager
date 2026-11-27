@@ -111,38 +111,40 @@ test("数量は数値と単位の間に半角スペース", () => {
   expect(formatQuantityWithUnit(150, "時間")).toBe("1.5 時間");
 });
 
-test("振込先はサンプルどおりの2行", () => {
-  expect(bankLines(owner)).toEqual([
-    "やよい銀行（0123） 渋谷支店（456） 普通 1234567",
-    "口座名義：ヤマダデザイン ヤマダタロウ",
-  ]);
-  expect(bankLines({ ...owner, accountType: "checking" })[0]).toContain(
-    " 当座 ",
-  );
+describe("振込先", () => {
+  test("手数料負担が取引先なら、口座名義の下に「貴社ご負担」", () => {
+    expect(bankLines(owner, "client")).toEqual([
+      "やよい銀行（0123） 渋谷支店（456） 普通 1234567",
+      "口座名義：ヤマダデザイン ヤマダタロウ",
+      "※振込手数料は貴社ご負担",
+    ]);
+  });
+
+  test("手数料負担が事業主なら「当方負担（差引振込可）」", () => {
+    expect(bankLines(owner, "owner")[2]).toBe(
+      "※振込手数料は当方負担（差引振込可）",
+    );
+  });
+
+  test("指定なしなら手数料の行は出さない", () => {
+    expect(bankLines(owner, "none")).toEqual([
+      "やよい銀行（0123） 渋谷支店（456） 普通 1234567",
+      "口座名義：ヤマダデザイン ヤマダタロウ",
+    ]);
+  });
+
+  test("科目は表示名", () => {
+    expect(
+      bankLines({ ...owner, accountType: "checking" }, "none")[0],
+    ).toContain(" 当座 ");
+  });
 });
 
 describe("備考", () => {
-  test("手数料負担が取引先なら文言を先に出し、その下に入力した備考", () => {
+  test("入力した備考を行ごとに出し、手数料の文言は入れない", () => {
     expect(
-      noteLines(
-        "client",
-        "いつもお世話になっております。\nよろしくお願いします。",
-      ),
-    ).toEqual([
-      "振込手数料：恐れ入りますが振込手数料は貴社にてご負担をお願いいたします。",
-      "いつもお世話になっております。",
-      "よろしくお願いします。",
-    ]);
-  });
-
-  test("手数料負担が事業主の文言", () => {
-    expect(noteLines("owner", null)).toEqual([
-      "振込手数料：当方にて負担いたします。手数料分を差し引いた金額をお振込みください。",
-    ]);
-  });
-
-  test("指定なしなら手数料の文言は出さない", () => {
-    expect(noteLines("none", "備考だけ")).toEqual(["備考だけ"]);
-    expect(noteLines("none", null)).toEqual([]);
+      noteLines("いつもお世話になっております。\nよろしくお願いします。"),
+    ).toEqual(["いつもお世話になっております。", "よろしくお願いします。"]);
+    expect(noteLines(null)).toEqual([]);
   });
 });

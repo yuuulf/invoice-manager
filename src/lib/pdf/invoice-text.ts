@@ -55,28 +55,29 @@ export function formatQuantityWithUnit(quantity: number, unit: string): string {
   return `${formatQuantity(quantity)} ${unit}`;
 }
 
-/** 振込先の 2 行（8.4 振込先） */
-export function bankLines(owner: InvoiceSnapshot["owner"]): [string, string] {
-  return [
-    `${owner.bankName}（${owner.bankCode}） ${owner.branchName}（${owner.branchCode}） ${accountTypeLabels[owner.accountType]} ${owner.accountNumber}`,
-    `口座名義：${owner.accountHolder}`,
-  ];
-}
-
 const feeTexts: Record<InvoiceSnapshot["client"]["feeBearer"], string | null> =
   {
-    client:
-      "振込手数料：恐れ入りますが振込手数料は貴社にてご負担をお願いいたします。",
-    owner:
-      "振込手数料：当方にて負担いたします。手数料分を差し引いた金額をお振込みください。",
+    client: "※振込手数料は貴社ご負担",
+    owner: "※振込手数料は当方負担（差引振込可）",
     none: null,
   };
 
-/** 備考の本文（8.4 備考）。手数料の文言を先に、その下に入力した備考 */
-export function noteLines(
+/**
+ * 振込先の行（8.4 振込先）。口座、口座名義、その下に手数料負担の文言（指定なしなら出さない）
+ */
+export function bankLines(
+  owner: InvoiceSnapshot["owner"],
   feeBearer: InvoiceSnapshot["client"]["feeBearer"],
-  notes: string | null,
 ): string[] {
   const fee = feeTexts[feeBearer];
-  return [...(fee ? [fee] : []), ...(notes ? notes.split("\n") : [])];
+  return [
+    `${owner.bankName}（${owner.bankCode}） ${owner.branchName}（${owner.branchCode}） ${accountTypeLabels[owner.accountType]} ${owner.accountNumber}`,
+    `口座名義：${owner.accountHolder}`,
+    ...(fee ? [fee] : []),
+  ];
+}
+
+/** 備考の本文（8.4 備考）。入力した備考を行ごとに */
+export function noteLines(notes: string | null): string[] {
+  return notes ? notes.split("\n") : [];
 }

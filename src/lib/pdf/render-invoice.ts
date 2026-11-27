@@ -380,11 +380,15 @@ function drawPayment(doc: Doc, s: InvoiceSnapshot, top: number) {
 
   const bankTop = top + lineHeight + mm(3);
   text(doc, "振込先：", LEFT, bankTop, { font: BOLD });
-  const [line1, line2] = bankLines(s.owner);
+  const lines = bankLines(s.owner, s.client.feeBearer);
   const width = RIGHT - valueX;
-  text(doc, line1, valueX, bankTop, { width, ellipsis: true });
-  text(doc, line2, valueX, bankTop + lineHeight, { width, ellipsis: true });
-  return bankTop + lineHeight * 2;
+  lines.forEach((line, i) => {
+    text(doc, line, valueX, bankTop + lineHeight * i, {
+      width,
+      ellipsis: true,
+    });
+  });
+  return bankTop + lineHeight * lines.length;
 }
 
 /** 最下段: 備考（枠線で囲む） */
@@ -404,7 +408,7 @@ function drawNotes(doc: Doc, s: InvoiceSnapshot, top: number) {
   doc.font(REGULAR).fontSize(9.5);
   const width = CONTENT_WIDTH - padding.x * 2;
   const bottom = top + height - padding.y;
-  for (const line of noteLines(s.client.feeBearer, s.notes)) {
+  for (const line of noteLines(s.notes)) {
     const lineBlockHeight = Math.max(
       lineHeight,
       doc.heightOfString(line || " ", {
