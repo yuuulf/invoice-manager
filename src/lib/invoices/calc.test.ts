@@ -143,21 +143,27 @@ describe("支払い期限（spec.md 5.1）", () => {
 });
 
 describe("請求番号（spec.md 7.2）", () => {
-  test("先頭 12 桁は I + 取引先コード + 請求日の年月", () => {
-    expect(invoiceNumberPrefix("ABC", "2026-11-30")).toBe("IABC-202611-");
+  test("先頭 15 桁は INV- + 取引先コード + 請求日の年月", () => {
+    expect(invoiceNumberPrefix("ABC", "2026-11-30")).toBe("INV-ABC-202611-");
   });
 
   test("一致する番号がなければ 001", () => {
-    expect(nextInvoiceNumber("IABC-202611-", [])).toBe("IABC-202611-001");
+    expect(nextInvoiceNumber("INV-ABC-202611-", [])).toBe("INV-ABC-202611-001");
     expect(
-      nextInvoiceNumber("IABC-202611-", ["IABC-202610-005", "IXYZ-202611-003"]),
-    ).toBe("IABC-202611-001");
+      nextInvoiceNumber("INV-ABC-202611-", [
+        "INV-ABC-202610-005",
+        "INV-XYZ-202611-003",
+      ]),
+    ).toBe("INV-ABC-202611-001");
   });
 
   test("一致する番号の最大 +1（欠番があっても最大の次）", () => {
     expect(
-      nextInvoiceNumber("IABC-202611-", ["IABC-202611-001", "IABC-202611-003"]),
-    ).toBe("IABC-202611-004");
+      nextInvoiceNumber("INV-ABC-202611-", [
+        "INV-ABC-202611-001",
+        "INV-ABC-202611-003",
+      ]),
+    ).toBe("INV-ABC-202611-004");
   });
 });
 

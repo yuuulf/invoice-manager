@@ -23,7 +23,7 @@ function renderActions() {
     <PreviewActions
       invoiceId={5}
       sampleHref="/invoices/5/pdf"
-      fileName="サンプル_請求書_IABC-202611-001.pdf"
+      fileName="サンプル_請求書_INV-ABC-202611-001.pdf"
     />,
   );
 }
@@ -42,7 +42,7 @@ test("編集に戻る・サンプル・発行の順に並ぶ", () => {
   expect(sample).toHaveAttribute("href", "/invoices/5/pdf");
   expect(sample).toHaveAttribute(
     "download",
-    "サンプル_請求書_IABC-202611-001.pdf",
+    "サンプル_請求書_INV-ABC-202611-001.pdf",
   );
   expect(back.compareDocumentPosition(sample)).toBe(
     Node.DOCUMENT_POSITION_FOLLOWING,
@@ -68,7 +68,7 @@ test("発行を押すと、確認ダイアログの前に請求番号をチェ�
   const dialog = vi.spyOn(window, "confirm");
   checkAction.mockResolvedValue({
     message:
-      "請求番号 IABC-202611-001 はすでに台帳にあるため、IABC-202611-002 に振り直しました。",
+      "請求番号 INV-ABC-202611-001 はすでに台帳にあるため、INV-ABC-202611-002 に振り直しました。",
   });
   renderActions();
   await userEvent.click(checkbox());

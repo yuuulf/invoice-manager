@@ -2,7 +2,7 @@ import type { InvoiceSnapshot } from "@/lib/invoices/snapshot";
 
 /** テスト用: サンプル PDF と同じ内容の出力データ */
 export const sampleSnapshot: InvoiceSnapshot = {
-  invoiceNumber: "IABC-202611-001",
+  invoiceNumber: "INV-ABC-202611-001",
   issueDate: "2026-11-30",
   subject: "Webサイト保守・改修",
   period: { type: "month", month: "2026-11" },

@@ -63,7 +63,7 @@ describe("請求番号（spec.md 7.2）", () => {
     ).toBeNull();
     expect(
       save(undefined, { clientId, issueDate: "2026-11-30" }).invoiceNumber,
-    ).toBe("IABC-202611-001");
+    ).toBe("INV-ABC-202611-001");
   });
 
   test("確定していない請求書の番号は連番に含めないので、作成中どうしは同じ番号になりうる", () => {
@@ -71,8 +71,8 @@ describe("請求番号（spec.md 7.2）", () => {
     const a = save(undefined, { clientId, issueDate: "2026-11-01" });
     const b = save(undefined, { clientId, issueDate: "2026-11-30" });
     expect([a.invoiceNumber, b.invoiceNumber]).toEqual([
-      "IABC-202611-001",
-      "IABC-202611-001",
+      "INV-ABC-202611-001",
+      "INV-ABC-202611-001",
     ]);
   });
 
@@ -84,11 +84,11 @@ describe("請求番号（spec.md 7.2）", () => {
     expect(
       save(invoice.id, { clientId: abc, issueDate: "2026-12-01" })
         .invoiceNumber,
-    ).toBe("IABC-202612-001");
+    ).toBe("INV-ABC-202612-001");
     expect(
       save(invoice.id, { clientId: xyz, issueDate: "2026-12-01" })
         .invoiceNumber,
-    ).toBe("IXYZ-202612-001");
+    ).toBe("INV-XYZ-202612-001");
     expect(
       save(invoice.id, { clientId: null, issueDate: "2026-12-01" })
         .invoiceNumber,

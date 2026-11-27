@@ -17,11 +17,11 @@ test("表示するとダウンロードを始め、URL からダウンロード�
   render(
     <AutoDownload
       href="/ledger/3/pdf"
-      fileName="請求書_IABC-202611-001.pdf"
+      fileName="請求書_INV-ABC-202611-001.pdf"
       cleanUrl="/ledger"
     />,
   );
-  expect(clicked).toEqual([["/ledger/3/pdf", "請求書_IABC-202611-001.pdf"]]);
+  expect(clicked).toEqual([["/ledger/3/pdf", "請求書_INV-ABC-202611-001.pdf"]]);
   expect(replaceState).toHaveBeenCalledWith(null, "", "/ledger");
 });
 
@@ -30,12 +30,12 @@ test("始まらないときのためにダウンロードのリンクを表示�
   render(
     <AutoDownload
       href="/ledger/3/pdf"
-      fileName="請求書_IABC-202611-001.pdf"
+      fileName="請求書_INV-ABC-202611-001.pdf"
       cleanUrl="/ledger"
     />,
   );
   expect(screen.getByRole("status")).toHaveTextContent("PDFを出力しました");
   const link = screen.getByRole("link", { name: "こちら" });
   expect(link).toHaveAttribute("href", "/ledger/3/pdf");
-  expect(link).toHaveAttribute("download", "請求書_IABC-202611-001.pdf");
+  expect(link).toHaveAttribute("download", "請求書_INV-ABC-202611-001.pdf");
 });

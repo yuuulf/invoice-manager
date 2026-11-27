@@ -16,7 +16,7 @@ test("請求番号・取引先・件名・請求日・合計を表示し、未�
       invoices={[
         {
           id: 2,
-          invoiceNumber: "IABC-202611-001",
+          invoiceNumber: "INV-ABC-202611-001",
           clientName: "サンプル産業株式会社",
           subject: "Webサイト保守",
           issueDate: "2026-11-30",
@@ -35,7 +35,7 @@ test("請求番号・取引先・件名・請求日・合計を表示し、未�
   );
   const [first, second] = screen.getAllByRole("row").slice(1);
   for (const text of [
-    "IABC-202611-001",
+    "INV-ABC-202611-001",
     "サンプル産業株式会社",
     "Webサイト保守",
     "2026-11-30",

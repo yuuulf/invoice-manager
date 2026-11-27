@@ -15,7 +15,7 @@ function renderDialog(
       onClose={onClose}
       title="台帳の削除"
       description="削除すると元に戻せません。"
-      expected="IABC-202611-001"
+      expected="INV-ABC-202611-001"
       inputLabel="確認のため請求番号を入力してください"
       submitLabel="削除"
       action={action}
@@ -53,7 +53,7 @@ test("決められた文字列を入力するまで実行できない", async ()
   expect(input()).toHaveFocus();
   const submit = screen.getByRole("button", { name: "削除" });
   expect(submit).toBeDisabled();
-  await userEvent.type(input(), "IABC-202611-00");
+  await userEvent.type(input(), "INV-ABC-202611-00");
   expect(submit).toBeDisabled();
   await userEvent.type(input(), "1");
   expect(submit).toBeEnabled();
@@ -61,19 +61,19 @@ test("決められた文字列を入力するまで実行できない", async ()
 
 test("実行すると入力値と hidden の値を送り、成功したら閉じる", async () => {
   const { action, onClose } = renderDialog();
-  await userEvent.type(input(), "IABC-202611-001");
+  await userEvent.type(input(), "INV-ABC-202611-001");
   await userEvent.click(screen.getByRole("button", { name: "削除" }));
   await vi.waitFor(() => expect(onClose).toHaveBeenCalled());
   const formData = action.mock.calls[0][0];
   expect(formData.get("id")).toBe("3");
-  expect(formData.get("confirmation")).toBe("IABC-202611-001");
+  expect(formData.get("confirmation")).toBe("INV-ABC-202611-001");
 });
 
 test("失敗したらメッセージを表示して開いたままにする", async () => {
   const { onClose } = renderDialog(
     vi.fn(async () => ({ error: "請求番号が一致しません" })),
   );
-  await userEvent.type(input(), "IABC-202611-001");
+  await userEvent.type(input(), "INV-ABC-202611-001");
   await userEvent.click(screen.getByRole("button", { name: "削除" }));
   expect(await screen.findByText("請求番号が一致しません")).toBeInTheDocument();
   expect(onClose).not.toHaveBeenCalled();
