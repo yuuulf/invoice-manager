@@ -80,6 +80,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Server Action で送信するフォームの `SelectField` は `value` で固定しない。送信後に React がフォームをリセットすると選択が外れて見えるため、`defaultValue`（送信結果の値でフォームを作り直す）にし、`onChange` で state に反映する
 - 必須項目は `required` を渡すと、ラベルの後ろに赤い `*` が付く（`RequiredMark`。読み上げでは「必須」）。「必須」の文字は表示しない
 - 項目が多いフォームは `FormSection` でまとまり（例: 基本情報、振込先）に分ける
+- 縦に長いフォームは、狭いまとまり同士を `FormColumns` で左右 2 列に並べる（狭い画面では 1 列）。幅が要るまとまり（請求書の明細・備考など）は 1 列のまま
+  - 事業主: 基本情報｜振込先。請求書: 基本情報｜対象期間・支払い期限
 - フォーム全体に関わるエラー（例: 必須項目が足りず出力できない）は `FormMessage` で先頭に表示する
 - 取り消せない重要な操作（台帳の削除など）は `TypedConfirmDialog` で決められた文字列（請求番号など）を入力させてから実行する
 - 請求書の PDF 出力は、保存してプレビュー画面（`/invoices/[id]/preview`、PDF を `?inline=1` で埋め込み表示）を開き、ダウンロード・確定はそこで行う。埋め込みの iframe は前に開いた画面ごと残るため、URL と `key` に PDF の内容から作る `pdfVersion` を付け、内容が変わったら読み込み直させる。確定のように別画面へ移ってからダウンロードさせるときは、`?download=...` 付きの画面へリダイレクトして `AutoDownload` を表示する

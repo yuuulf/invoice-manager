@@ -590,3 +590,15 @@ describe("PDF 出力（spec.md 7.4）", () => {
     ).toHaveAccessibleDescription("34文字以内 件名を入力してください");
   });
 });
+
+test("基本情報と対象期間・支払い期限を左右に並べ、明細以降は 1 列にする", () => {
+  renderNew();
+  const columns = screen.getByTestId("form-columns");
+  const sections = Array.from(columns.children).map(
+    (child) => child.querySelector("legend")?.textContent,
+  );
+  expect(sections).toEqual(["基本情報", "対象期間・支払い期限"]);
+  for (const name of ["明細", "備考", "出力"]) {
+    expect(columns).not.toContainElement(screen.getByRole("group", { name }));
+  }
+});

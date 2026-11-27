@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
 import { FormActions, type FormMode } from "@/components/ui/form-actions";
 import { FormMessage } from "@/components/ui/form-message";
+import { FormColumns } from "@/components/ui/form-columns";
 import { FormSection } from "@/components/ui/form-section";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { SelectField } from "@/components/ui/select-field";
@@ -272,146 +273,153 @@ function InvoiceFields({
 
   return (
     <>
-      <FormSection title="基本情報">
-        <div>
-          <p className="text-sm font-bold">請求番号</p>
-          <p className="mt-1 font-mono">
-            {invoiceNumber ?? <span className="text-zinc-500">未採番</span>}
-          </p>
-          <p className="mt-1 text-sm text-zinc-500">
-            取引先と請求日を入力して保存すると採番されます。取引先か請求日の年月を変えると振り直します。
-          </p>
-        </div>
-        <SelectField
-          label="取引先"
-          name="clientId"
-          required
-          // value で固定すると、送信後に React がフォームをリセットしたとき選択が外れて見える。
-          // defaultValue（送信結果の値で作り直される）にし、変更だけを state に反映する
-          defaultValue={initial.clientId}
-          onChange={(e) => setClientId(e.target.value)}
-          error={errors.clientId}
-          options={clients.map((c) => ({
-            value: String(c.id),
-            label: `${c.code} ${c.name}`,
-          }))}
-        />
-        <SelectField
-          label="事業主"
-          name="ownerId"
-          required
-          defaultValue={initial.ownerId}
-          error={errors.ownerId}
-          options={owners.map((o) => ({ value: String(o.id), label: o.label }))}
-        />
-        <div className="w-48">
-          <TextField
-            label="請求日"
-            name="issueDate"
-            type="date"
-            required
-            defaultValue={initial.issueDate}
-            error={errors.issueDate}
-          />
-        </div>
-        <TextField
-          label="件名"
-          name="subject"
-          required
-          hint={`${SUBJECT_MAX_LENGTH}文字以内`}
-          defaultValue={initial.subject}
-          error={errors.subject}
-        />
-      </FormSection>
-
-      <FormSection title="対象期間・支払い期限">
-        <div>
-          <RadioGroup
-            legend="対象期間"
-            name="periodType"
-            required
-            value={period.periodType}
-            onValueChange={(value) => updatePeriod("periodType", value)}
-            error={errors.periodType}
-            options={[
-              { value: "month", label: "月" },
-              { value: "range", label: "期間" },
-            ]}
-          />
-          {period.periodType === "month" && (
-            <div className="mt-3 w-48">
-              <TextField
-                label="対象月"
-                name="periodMonth"
-                type="month"
-                value={period.periodMonth}
-                onChange={(e) => updatePeriod("periodMonth", e.target.value)}
-                error={errors.periodMonth}
-              />
-            </div>
-          )}
-          {period.periodType === "range" && (
-            <div className="mt-3 flex items-start gap-3">
-              <div className="w-48">
-                <TextField
-                  label="開始日"
-                  name="periodStart"
-                  type="date"
-                  value={period.periodStart}
-                  onChange={(e) => updatePeriod("periodStart", e.target.value)}
-                  error={errors.periodStart}
-                />
-              </div>
-              <span className="pt-9">〜</span>
-              <div className="w-48">
-                <TextField
-                  label="終了日"
-                  name="periodEnd"
-                  type="date"
-                  value={period.periodEnd}
-                  onChange={(e) => updatePeriod("periodEnd", e.target.value)}
-                  error={errors.periodEnd}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-        <div>
-          <div className="flex items-end gap-2">
-            <div className="w-48">
-              <TextField
-                label="支払い期限"
-                name="dueDate"
-                type="date"
-                required
-                value={shownDueDate}
-                onChange={(e) => {
-                  setDueDate(e.target.value);
-                  setDueDateManual(true);
-                }}
-                error={errors.dueDate}
-              />
-            </div>
-            <Button
-              variant="secondary"
-              disabled={!dueDateManual || autoDueDate === null}
-              onClick={() => setDueDateManual(false)}
-            >
-              再計算
-            </Button>
+      <FormColumns>
+        <FormSection title="基本情報">
+          <div>
+            <p className="text-sm font-bold">請求番号</p>
+            <p className="mt-1 font-mono">
+              {invoiceNumber ?? <span className="text-zinc-500">未採番</span>}
+            </p>
+            <p className="mt-1 text-sm text-zinc-500">
+              取引先と請求日を入力して保存すると採番されます。取引先か請求日の年月を変えると振り直します。
+            </p>
           </div>
-          <input
-            type="hidden"
-            name="dueDateManual"
-            value={String(dueDateManual)}
+          <SelectField
+            label="取引先"
+            name="clientId"
+            required
+            // value で固定すると、送信後に React がフォームをリセットしたとき選択が外れて見える。
+            // defaultValue（送信結果の値で作り直される）にし、変更だけを state に反映する
+            defaultValue={initial.clientId}
+            onChange={(e) => setClientId(e.target.value)}
+            error={errors.clientId}
+            options={clients.map((c) => ({
+              value: String(c.id),
+              label: `${c.code} ${c.name}`,
+            }))}
           />
-          <p className="mt-1 text-sm text-zinc-500">
-            {dueDateManual
-              ? "手動で変更しています。取引先や対象期間を変えても自動では変わりません。"
-              : "取引先の支払い期限の設定と対象期間から自動で算出します。"}
-          </p>
-        </div>
-      </FormSection>
+          <SelectField
+            label="事業主"
+            name="ownerId"
+            required
+            defaultValue={initial.ownerId}
+            error={errors.ownerId}
+            options={owners.map((o) => ({
+              value: String(o.id),
+              label: o.label,
+            }))}
+          />
+          <div className="w-48">
+            <TextField
+              label="請求日"
+              name="issueDate"
+              type="date"
+              required
+              defaultValue={initial.issueDate}
+              error={errors.issueDate}
+            />
+          </div>
+          <TextField
+            label="件名"
+            name="subject"
+            required
+            hint={`${SUBJECT_MAX_LENGTH}文字以内`}
+            defaultValue={initial.subject}
+            error={errors.subject}
+          />
+        </FormSection>
+
+        <FormSection title="対象期間・支払い期限">
+          <div>
+            <RadioGroup
+              legend="対象期間"
+              name="periodType"
+              required
+              value={period.periodType}
+              onValueChange={(value) => updatePeriod("periodType", value)}
+              error={errors.periodType}
+              options={[
+                { value: "month", label: "月" },
+                { value: "range", label: "期間" },
+              ]}
+            />
+            {period.periodType === "month" && (
+              <div className="mt-3 w-48">
+                <TextField
+                  label="対象月"
+                  name="periodMonth"
+                  type="month"
+                  value={period.periodMonth}
+                  onChange={(e) => updatePeriod("periodMonth", e.target.value)}
+                  error={errors.periodMonth}
+                />
+              </div>
+            )}
+            {period.periodType === "range" && (
+              <div className="mt-3 flex items-start gap-3">
+                <div className="w-48">
+                  <TextField
+                    label="開始日"
+                    name="periodStart"
+                    type="date"
+                    value={period.periodStart}
+                    onChange={(e) =>
+                      updatePeriod("periodStart", e.target.value)
+                    }
+                    error={errors.periodStart}
+                  />
+                </div>
+                <span className="pt-9">〜</span>
+                <div className="w-48">
+                  <TextField
+                    label="終了日"
+                    name="periodEnd"
+                    type="date"
+                    value={period.periodEnd}
+                    onChange={(e) => updatePeriod("periodEnd", e.target.value)}
+                    error={errors.periodEnd}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="flex items-end gap-2">
+              <div className="w-48">
+                <TextField
+                  label="支払い期限"
+                  name="dueDate"
+                  type="date"
+                  required
+                  value={shownDueDate}
+                  onChange={(e) => {
+                    setDueDate(e.target.value);
+                    setDueDateManual(true);
+                  }}
+                  error={errors.dueDate}
+                />
+              </div>
+              <Button
+                variant="secondary"
+                disabled={!dueDateManual || autoDueDate === null}
+                onClick={() => setDueDateManual(false)}
+              >
+                再計算
+              </Button>
+            </div>
+            <input
+              type="hidden"
+              name="dueDateManual"
+              value={String(dueDateManual)}
+            />
+            <p className="mt-1 text-sm text-zinc-500">
+              {dueDateManual
+                ? "手動で変更しています。取引先や対象期間を変えても自動では変わりません。"
+                : "取引先の支払い期限の設定と対象期間から自動で算出します。"}
+            </p>
+          </div>
+        </FormSection>
+      </FormColumns>
 
       <FormSection title="明細">
         <RadioGroup
