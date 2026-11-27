@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { parseInvoiceForm, SUBJECT_MAX_LENGTH } from "./validation";
+import {
+  countNoteLines,
+  parseInvoiceForm,
+  SUBJECT_MAX_LENGTH,
+} from "./validation";
 
 function form(entries: Record<string, string> = {}) {
   const fd = new FormData();
@@ -159,27 +163,21 @@ describe("parseInvoiceForm（作成中の保存）", () => {
     });
   });
 
-  test("備考は250文字まで（改行は数えない）", () => {
+  test("備考は1行50文字（全角換算）で折り返して5行まで", () => {
+    const message = "備考は1行50文字で折り返して5行以内で入力してください";
+    // 50 文字ちょうどは 1 行、51 文字は 2 行
     expect(parseInvoiceForm(form({ notes: "あ".repeat(250) })).ok).toBe(true);
-    expect(
-      parseInvoiceForm(
-        form({ notes: `${"あ".repeat(125)}\n${"あ".repeat(125)}` }),
-      ).ok,
-    ).toBe(true);
     expect(parseInvoiceForm(form({ notes: "あ".repeat(251) }))).toMatchObject({
       ok: false,
-      errors: { notes: "備考は250文字以内で入力してください" },
+      errors: { notes: message },
     });
-  });
-
-  test("備考は5行まで（改行で区切った行。空の行も数える）", () => {
-    expect(parseInvoiceForm(form({ notes: "1\n2\n\n4\n5" })).ok).toBe(true);
-    expect(parseInvoiceForm(form({ notes: "1\n2\n3\n4\n5\n6" }))).toMatchObject(
-      {
-        ok: false,
-        errors: { notes: "備考は5行以内で入力してください" },
-      },
-    );
+    // 改行で区切った行も数える（51 文字 = 2 行 + 3 行 = 5 行）
+    expect(
+      parseInvoiceForm(form({ notes: `${"あ".repeat(51)}\n3\n4\n5` })).ok,
+    ).toBe(true);
+    expect(
+      parseInvoiceForm(form({ notes: `${"あ".repeat(51)}\n3\n4\n5\n6` })),
+    ).toMatchObject({ ok: false, errors: { notes: message } });
   });
 
   test("件名は34文字まで", () => {
@@ -199,5 +197,23 @@ describe("parseInvoiceForm（作成中の保存）", () => {
     expect(result.values.subject).toBe("件名");
     expect(result.values.items[0].quantity).toBe("x");
     expect(result.values.items).toHaveLength(10);
+  });
+});
+
+describe("備考の行数（countNoteLines）", () => {
+  test("空なら0、空の行も1行", () => {
+    expect(countNoteLines("")).toBe(0);
+    expect(countNoteLines("1\n\n3")).toBe(3);
+  });
+
+  test("全角は1文字、半角（英数字・記号・半角カナ）は0.5文字として50文字で折り返す", () => {
+    expect(countNoteLines("あ".repeat(50))).toBe(1);
+    expect(countNoteLines("あ".repeat(51))).toBe(2);
+    expect(countNoteLines("a".repeat(100))).toBe(1);
+    expect(countNoteLines("a".repeat(101))).toBe(2);
+    expect(countNoteLines("ｱ".repeat(100))).toBe(1);
+    // 全角 49 + 半角 2 = 50
+    expect(countNoteLines(`${"あ".repeat(49)}ab`)).toBe(1);
+    expect(countNoteLines(`${"あ".repeat(49)}abc`)).toBe(2);
   });
 });

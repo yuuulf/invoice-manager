@@ -32,7 +32,8 @@ import type { InvoiceWithItems } from "@/lib/invoices/repository";
 import {
   itemFieldName,
   MAX_ITEMS,
-  NOTES_MAX_LENGTH,
+  countNoteLines,
+  NOTES_LINE_WIDTH,
   NOTES_MAX_LINES,
   SUBJECT_MAX_LENGTH,
   type InvoiceFormValues,
@@ -224,6 +225,9 @@ function InvoiceFields({
   const [dueDateManual, setDueDateManual] = useState(initial.dueDateManual);
   const [items, setItems] = useState(initial.items);
   const [taxMode, setTaxMode] = useState(initial.taxMode);
+  const [notes, setNotes] = useState(initial.notes);
+  // 入力欄と同じく、前後の空白行は保存時に取り除く
+  const noteLineCount = countNoteLines(notes.replace(/\r\n/g, "\n").trim());
 
   const client = clients.find((c) => String(c.id) === clientId);
   const validPeriod = periodFrom(period);
@@ -425,12 +429,15 @@ function InvoiceFields({
         <TextAreaField
           label="備考"
           name="notes"
-          // 改行も 1 文字と数えるため、行の区切りの分を足す
-          maxLength={NOTES_MAX_LENGTH + NOTES_MAX_LINES - 1}
-          hint={`${NOTES_MAX_LINES}行・${NOTES_MAX_LENGTH}文字以内（改行は文字数に数えません）`}
+          hint={`1行${NOTES_LINE_WIDTH}文字（半角は0.5文字）で折り返して${NOTES_MAX_LINES}行まで。いま${noteLineCount}行です`}
           defaultValue={initial.notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={NOTES_MAX_LINES}
+          // 全角 50 文字で折り返す幅（左右の余白と枠線を足す）。英単語の途中でも折り返す。
+          // 半角は文字によって幅が違うため、見た目の折り返しと行数（半角 = 0.5 文字）は多少ずれる
+          style={{ width: `calc(${NOTES_LINE_WIDTH}em + 1.5rem + 2px)` }}
+          className="max-w-full [line-break:anywhere]"
           error={errors.notes}
-          rows={4}
         />
       </FormSection>
     </>

@@ -125,12 +125,15 @@ describe("備考欄（spec.md 7.1, 8.4）", () => {
     expect(layout.size).toBeGreaterThanOrEqual(6.5);
   });
 
-  test("上限（5行・250文字）で各行が折り返す長さでも、いちばん狭い備考欄に入る", () => {
-    // 1 行に収まらない長さの行を 4 行 + 残り
-    const notes = [51, 51, 51, 51, 46].map((n) => "あ".repeat(n)).join("\n");
+  test.each([
+    ["全角50文字×5行", "あ".repeat(50)],
+    ["半角100文字×5行（幅の広い W）", "W".repeat(100)],
+    ["半角100文字×5行（数字）", "1".repeat(100)],
+  ])("上限いっぱい（%s）でも、いちばん狭い備考欄に入る", (_, line) => {
+    const notes = Array.from({ length: 5 }, () => line).join("\n");
     const layout = layoutNotes(createDocument("test"), notes, mm(27.4));
     expect(layout.fits).toBe(true);
-    expect(layout.size).toBeGreaterThanOrEqual(6.5);
+    expect(layout.size).toBeGreaterThanOrEqual(5);
   });
 
   test("欄に入るなら通常の大きさ（9.5pt、行の高さ 1.8 倍）", () => {

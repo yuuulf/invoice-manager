@@ -15,10 +15,37 @@ import {
 /** 件名の最大文字数。PDF で件名＋対象期間が 3 行に収まる長さ（spec.md 7.1） */
 export const SUBJECT_MAX_LENGTH = 34;
 
-/** 備考の最大文字数（改行は数えない。spec.md 7.1） */
-export const NOTES_MAX_LENGTH = 250;
-/** 備考の最大行数（改行で区切った行。PDF での折り返しは数えない。spec.md 7.1） */
+/** 備考の 1 行の文字数（全角換算。spec.md 7.1）。これを超えると折り返す */
+export const NOTES_LINE_WIDTH = 50;
+/** 備考の最大行数（折り返しを含む。spec.md 7.1） */
 export const NOTES_MAX_LINES = 5;
+
+/** 全角換算の文字幅。半角（ASCII・半角カナ）は 0.5、それ以外は 1 */
+function charWidth(char: string) {
+  const code = char.codePointAt(0)!;
+  return code <= 0x7e || (code >= 0xff61 && code <= 0xff9f) ? 0.5 : 1;
+}
+
+/**
+ * 備考の行数。改行で区切った各行を、1 行 50 文字（全角換算）で折り返して数える（spec.md 7.1）。
+ * 空の行も 1 行と数える。備考が空なら 0
+ */
+export function countNoteLines(notes: string): number {
+  if (!notes) return 0;
+  return notes.split("\n").reduce((total, line) => {
+    let lines = 1;
+    let width = 0;
+    for (const char of line) {
+      const w = charWidth(char);
+      if (width + w > NOTES_LINE_WIDTH) {
+        lines += 1;
+        width = 0;
+      }
+      width += w;
+    }
+    return total + lines;
+  }, 0);
+}
 
 /** 明細の最大行数（spec.md 7.3） */
 export const MAX_ITEMS = 10;
@@ -140,11 +167,8 @@ export function parseInvoiceForm(formData: FormData): InvoiceParseResult {
   if ([...values.subject].length > SUBJECT_MAX_LENGTH) {
     errors.subject = `件名は${SUBJECT_MAX_LENGTH}文字以内で入力してください`;
   }
-  const noteLines = values.notes ? values.notes.split("\n") : [];
-  if (noteLines.length > NOTES_MAX_LINES) {
-    errors.notes = `備考は${NOTES_MAX_LINES}行以内で入力してください`;
-  } else if ([...noteLines.join("")].length > NOTES_MAX_LENGTH) {
-    errors.notes = `備考は${NOTES_MAX_LENGTH}文字以内で入力してください`;
+  if (countNoteLines(values.notes) > NOTES_MAX_LINES) {
+    errors.notes = `備考は1行${NOTES_LINE_WIDTH}文字で折り返して${NOTES_MAX_LINES}行以内で入力してください`;
   }
   if (values.dueDate && !isValidDate(values.dueDate)) {
     errors.dueDate = "支払い期限の日付が正しくありません";
